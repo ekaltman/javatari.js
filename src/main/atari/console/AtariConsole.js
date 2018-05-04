@@ -14,14 +14,14 @@ jt.AtariConsole = function(mainVideoClock) {
         setDefaults();
     };
 
-    this.powerOn = function(fromState) {
+    this.powerOn = function() {
         if (this.powerIsOn) this.powerOff();
         bus.powerOn();
         this.powerIsOn = true;
         consoleControlsSocket.controlsStatesRedefined();
         updateVideoSynchronization();
         videoStandardAutoDetectionStart();
-        if (!fromState) consoleControlsSocket.firePowerAndUserPauseStateUpdate();   // loadState will fire it
+        consoleControlsSocket.firePowerAndUserPauseStateUpdate();
     };
 
     this.powerOff = function() {
@@ -97,6 +97,9 @@ jt.AtariConsole = function(mainVideoClock) {
     function videoFrame() {
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
+	// JDA
+	aok.frame(aokSaveState());
+	// JDA end
         tia.frame();
     }
 
@@ -247,6 +250,18 @@ jt.AtariConsole = function(mainVideoClock) {
     var cycleCartridgeFormat = function() {
     };
 
+    // JDA
+    var aokSaveState = function(extended) {
+        var s = {
+            'tia': tia.aokSaveState(),
+            'ram': ram.aokSaveState(),
+            'cpu': cpu.saveState(),
+        };
+        return s;
+    };
+    this.aokSaveState = aokSaveState;
+    // JDA end
+
     var saveState = function(extended) {
         var s = {
             t: tia.saveState(extended),
@@ -283,7 +298,6 @@ jt.AtariConsole = function(mainVideoClock) {
         setCartridge(s.ca && jt.CartridgeCreator.recreateCartridgeFromSaveState(s.ca, getCartridge()));
         if (s.vsa !== undefined) setVideoStandardAuto(s.vsa);
         setVideoStandard(jt.VideoStandard[s.vs]);
-        consoleControlsSocket.firePowerAndUserPauseStateUpdate();
         consoleControlsSocket.controlsStatesRedefined();
         saveStateSocket.externalStateChange();
     };
@@ -312,6 +326,10 @@ jt.AtariConsole = function(mainVideoClock) {
         self.tia = tia;
         ram = new jt.Ram();
         bus = new jt.Bus(cpu, tia, pia, ram);
+	// JDA
+	aok = new jt.AOK();
+	cpu.connectAOK(aok, aokSaveState);
+	// JDA end
     };
 
     var socketsCreate = function() {
@@ -339,6 +357,9 @@ jt.AtariConsole = function(mainVideoClock) {
     var tia;
     var ram;
     var bus;
+    // JDA
+    var aok;
+    // JDA end
 
     var videoStandard;
     var videoPulldown, videoPulldownStep;
@@ -620,7 +641,7 @@ jt.AtariConsole = function(mainVideoClock) {
                 self.showOSD("State " + slot + " load failed, wrong version", true);
                 return;
             }
-            if (!self.powerIsOn) self.powerOn(true);    // true = from state loading
+            if (!self.powerIsOn) self.powerOn();
             loadState(state);
             self.showOSD("State " + slot + " loaded", true);
         };

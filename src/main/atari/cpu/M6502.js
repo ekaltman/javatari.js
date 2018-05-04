@@ -12,6 +12,15 @@ jt.M6502 = function() {
     this.powerOff = function() {
     };
 
+    // JDA
+    var aok, aok_getState;
+
+    this.connectAOK = function(xaok, getstate) {
+	aok = xaok;
+	aok_getState = getstate;
+    };
+    // JDA end
+
     this.clockPulse = function() {
         if (!RDY) return;      // TODO Should be ignored in the last cycle of the instruction
         T++;
@@ -96,6 +105,9 @@ jt.M6502 = function() {
     // Internal operations
 
     var fetchOpcodeAndDecodeInstruction = function() {
+	// JDA
+	aok.instructionDispatch(aok_getState());
+	// JDA end
         opcode = bus.read(PC);
         instruction = instructions[opcode];
         T = 0;

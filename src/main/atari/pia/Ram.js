@@ -39,6 +39,12 @@ jt.Ram = function() {
 
     // Savestate  -------------------------------------------
 
+    // JDA
+    this.aokSaveState = function() {
+        return bytes;
+    };
+    // JDA end
+
     this.saveState = function() {
         return {
             b: jt.Util.storeInt8BitArrayToStringBase64(bytes)

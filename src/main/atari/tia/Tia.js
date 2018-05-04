@@ -1339,6 +1339,127 @@ jt.Tia = function(pCpu, pPia, audioSocket) {
 
     // Savestate  ------------------------------------------------
 
+    // JDA
+    this.aokSaveState = function() {
+        var s = {
+            ccp: changeClockPrevLine,
+            lpx: linePixels,
+
+            vs: vSyncOn,
+            vb: vBlankOn,
+
+            pfe: playfieldEnabled,
+            pfl: playfieldPatternL,
+            pfr: playfieldPatternR,
+            pfc: playfieldColor,
+            pflc: playfieldLeftColor,
+            pfrc: playfieldRightColor,
+            pfb: playfieldBackground,
+            pfrl: playfieldReflected,
+            pfsc: playfieldScoreMode,
+            pfp: playfieldPriority,
+
+            be: ballEnabled,
+            bx: ballPixel,
+            blp: ballLineSpritePointer,
+            bc: ballColor,
+
+            p0e: player0Enabled,
+            p0x: player0Pixel,
+            p0lp: player0LineSpritePointer,
+            p0a: player0Alt,
+            p0af: player0AltFrom,
+            p0al: player0AltLength,
+            p0ao: player0AltCopyOffset,
+            p0c: player0Color,
+
+            p1e: player1Enabled,
+            p1x: player1Pixel,
+            p1lp: player1LineSpritePointer,
+            p1a: player1Alt,
+            p1af: player1AltFrom,
+            p1al: player1AltLength,
+            p1ao: player1AltCopyOffset,
+            p1c: player1Color,
+
+            m0e: missile0Enabled,
+            m0x: missile0Pixel,
+            m0lp: missile0LineSpritePointer,
+            m0a: missile0Alt,
+            m0af: missile0AltFrom,
+            m0al: missile0AltLength,
+            m0ao: missile0AltCopyOffset,
+            m0c: missile0Color,
+
+            m1e: missile1Enabled,
+            m1x: missile1Pixel,
+            m1lp: missile1LineSpritePointer,
+            m1a: missile1Alt,
+            m1af: missile1AltFrom,
+            m1al: missile1AltLength,
+            m1ao: missile1AltCopyOffset,
+            m1c: missile1Color,
+
+            hmh: hMoveHitBlank,
+            hmc: hMoveHitClock,
+            hmlh: hMoveLateHit,
+            hmlb: hMoveLateHitBlank,
+
+            co: collisions,
+            cop: collisionsPossible,
+            cod: debugNoCollisions,
+
+            cbl: controlsButtonsLatched,
+            j0p: controlsJOY0ButtonPressed,
+            j1p: controlsJOY1ButtonPressed,
+
+            pcg: paddleCapacitorsGrounded,
+            pd0: paddle0Position,
+            pd0c: paddle0CapacitorCharge,
+            pd1: paddle1Position,
+            pd1c: paddle1CapacitorCharge,
+
+            CTRLPF: CTRLPF,
+            COLUPF: COLUPF,
+            COLUBK: COLUBK,
+            PF0: PF0,
+            PF1: PF1,
+            PF2: PF2,
+            ENABL: ENABL,
+            ENABLd: ENABLd,
+            VDELBL: VDELBL,
+            NUSIZ0: NUSIZ0,
+            COLUP0: COLUP0,
+            REFP0: REFP0,
+            GRP0: GRP0,
+            GRP0d: GRP0d,
+            VDELP0: VDELP0,
+            NUSIZ1: NUSIZ1,
+            COLUP1: COLUP1,
+            REFP1: REFP1,
+            GRP1: GRP1,
+            GRP1d: GRP1d,
+            VDELP1: VDELP1,
+            ENAM0: ENAM0,
+            RESMP0: RESMP0,
+            ENAM1: ENAM1,
+            RESMP1: RESMP1,
+            HMP0: HMP0,
+            HMP1: HMP1,
+            HMM0: HMM0,
+            HMM1: HMM1,
+            HMBL: HMBL,
+            AUDC0: AUDC0,
+            AUDC1: AUDC1,
+            AUDF0: AUDF0,
+            AUDF1: AUDF1,
+            AUDV0: AUDV0,
+            AUDV1: AUDV1
+        };
+        return s;
+    };
+    // JDA end
+
     this.saveState = function(extended) {
         var s = {
             ccp: changeClockPrevLine,
