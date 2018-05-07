@@ -1,0 +1,3 @@
+[submodule "playspecs"]
+	path = src/playspecs-js
+	url = https://github.com/JoeOsborn/playspecs-js

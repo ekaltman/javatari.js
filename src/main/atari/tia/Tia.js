@@ -1343,7 +1343,7 @@ jt.Tia = function(pCpu, pPia, audioSocket) {
     this.aokSaveState = function() {
         var s = {
             ccp: changeClockPrevLine,
-            lpx: linePixels,
+            lpx: new Uint32Array(linePixels),
 
             vs: vSyncOn,
             vb: vBlankOn,

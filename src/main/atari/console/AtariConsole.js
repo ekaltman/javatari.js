@@ -327,8 +327,8 @@ jt.AtariConsole = function(mainVideoClock) {
         ram = new jt.Ram();
         bus = new jt.Bus(cpu, tia, pia, ram);
 	// JDA
-	aok = new jt.AOK();
-	cpu.connectAOK(aok, aokSaveState);
+	      aok = new jt.AOK(this);
+	      cpu.connectAOK(aok, aokSaveState);
 	// JDA end
     };
 
