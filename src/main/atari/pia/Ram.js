@@ -41,7 +41,7 @@ jt.Ram = function() {
 
     // JDA
     this.aokSaveState = function() {
-        return bytes;
+        return new Uint8Array(bytes);
     };
     // JDA end
 
