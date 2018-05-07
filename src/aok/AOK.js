@@ -25,7 +25,7 @@ jt.AOK = function() {
 		if (t++ < 50) {
 			console.info(state);
 		}
-	}
+	};
 
 	init(this);
 };
