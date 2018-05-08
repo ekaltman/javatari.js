@@ -105,9 +105,9 @@ jt.M6502 = function() {
     // Internal operations
 
     var fetchOpcodeAndDecodeInstruction = function() {
-	// JDA
-	aok.instructionDispatch(aok_getState());
-	// JDA end
+	      // JDA
+	      aok.instructionDispatch(aok_getState(aok.currentState));
+	      // JDA end
         opcode = bus.read(PC);
         instruction = instructions[opcode];
         T = 0;
@@ -1730,14 +1730,30 @@ jt.M6502 = function() {
 
     // Savestate  -------------------------------------------
 
-    this.saveState = function() {
-        return {
-            PC: PC, A: A, X: X, Y: Y, SP: SP,
-            N: N, V: V, D: D, I: I, Z: Z, C: C,
-            T: T, o: opcode, R: RDY | 0,
-            d: data, AD: AD, BA: BA, BC: BALCrossed | 0, IA: IA,
-            bo: branchOffset, boa: branchOffsetCrossAdjust
-        };
+    this.saveState = function(s) {
+        if(!s) { s = {}; }
+        s.PC = PC;
+        s.A = A;
+        s.X = X;
+        s.Y = Y;
+        s.SP = SP;
+        s.N = N;
+        s.V = V;
+        s.D = D;
+        s.I = I;
+        s.Z = Z;
+        s.C = C;
+        s.T = T;
+        s.o = opcode;
+        s.R = RDY | 0;
+        s.d = data;
+        s.AD = AD;
+        s.BA = BA;
+        s.BC = BALCrossed | 0;
+        s.IA = IA;
+        s.bo = branchOffset;
+        s.boa = branchOffsetCrossAdjust;
+        return s;
     };
 
     this.loadState = function(state) {

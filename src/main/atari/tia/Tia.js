@@ -1340,122 +1340,109 @@ jt.Tia = function(pCpu, pPia, audioSocket) {
     // Savestate  ------------------------------------------------
 
     // JDA
-    this.aokSaveState = function() {
-        var s = {
-            ccp: changeClockPrevLine,
-            lpx: new Uint32Array(linePixels),
-
-            vs: vSyncOn,
-            vb: vBlankOn,
-
-            pfe: playfieldEnabled,
-            pfl: playfieldPatternL,
-            pfr: playfieldPatternR,
-            pfc: playfieldColor,
-            pflc: playfieldLeftColor,
-            pfrc: playfieldRightColor,
-            pfb: playfieldBackground,
-            pfrl: playfieldReflected,
-            pfsc: playfieldScoreMode,
-            pfp: playfieldPriority,
-
-            be: ballEnabled,
-            bx: ballPixel,
-            blp: ballLineSpritePointer,
-            bc: ballColor,
-
-            p0e: player0Enabled,
-            p0x: player0Pixel,
-            p0lp: player0LineSpritePointer,
-            p0a: player0Alt,
-            p0af: player0AltFrom,
-            p0al: player0AltLength,
-            p0ao: player0AltCopyOffset,
-            p0c: player0Color,
-
-            p1e: player1Enabled,
-            p1x: player1Pixel,
-            p1lp: player1LineSpritePointer,
-            p1a: player1Alt,
-            p1af: player1AltFrom,
-            p1al: player1AltLength,
-            p1ao: player1AltCopyOffset,
-            p1c: player1Color,
-
-            m0e: missile0Enabled,
-            m0x: missile0Pixel,
-            m0lp: missile0LineSpritePointer,
-            m0a: missile0Alt,
-            m0af: missile0AltFrom,
-            m0al: missile0AltLength,
-            m0ao: missile0AltCopyOffset,
-            m0c: missile0Color,
-
-            m1e: missile1Enabled,
-            m1x: missile1Pixel,
-            m1lp: missile1LineSpritePointer,
-            m1a: missile1Alt,
-            m1af: missile1AltFrom,
-            m1al: missile1AltLength,
-            m1ao: missile1AltCopyOffset,
-            m1c: missile1Color,
-
-            hmh: hMoveHitBlank,
-            hmc: hMoveHitClock,
-            hmlh: hMoveLateHit,
-            hmlb: hMoveLateHitBlank,
-
-            co: collisions,
-            cop: collisionsPossible,
-            cod: debugNoCollisions,
-
-            cbl: controlsButtonsLatched,
-            j0p: controlsJOY0ButtonPressed,
-            j1p: controlsJOY1ButtonPressed,
-
-            pcg: paddleCapacitorsGrounded,
-            pd0: paddle0Position,
-            pd0c: paddle0CapacitorCharge,
-            pd1: paddle1Position,
-            pd1c: paddle1CapacitorCharge,
-
-            CTRLPF: CTRLPF,
-            COLUPF: COLUPF,
-            COLUBK: COLUBK,
-            PF0: PF0,
-            PF1: PF1,
-            PF2: PF2,
-            ENABL: ENABL,
-            ENABLd: ENABLd,
-            VDELBL: VDELBL,
-            NUSIZ0: NUSIZ0,
-            COLUP0: COLUP0,
-            REFP0: REFP0,
-            GRP0: GRP0,
-            GRP0d: GRP0d,
-            VDELP0: VDELP0,
-            NUSIZ1: NUSIZ1,
-            COLUP1: COLUP1,
-            REFP1: REFP1,
-            GRP1: GRP1,
-            GRP1d: GRP1d,
-            VDELP1: VDELP1,
-            ENAM0: ENAM0,
-            RESMP0: RESMP0,
-            ENAM1: ENAM1,
-            RESMP1: RESMP1,
-            HMP0: HMP0,
-            HMP1: HMP1,
-            HMM0: HMM0,
-            HMM1: HMM1,
-            HMBL: HMBL,
-            AUDC0: AUDC0,
-            AUDC1: AUDC1,
-            AUDF0: AUDF0,
-            AUDF1: AUDF1,
-            AUDV0: AUDV0,
-            AUDV1: AUDV1
-        };
+    this.aokSaveState = function(s) {
+        if(!s) { s = {}; }
+        s.ccp = changeClockPrevLine;
+        s.lpx = new Uint32Array(linePixels);
+        s.vs = vSyncOn;
+        s.vb = vBlankOn;
+        s.pfe = playfieldEnabled;
+        s.pfl = playfieldPatternL;
+        s.pfr = playfieldPatternR;
+        s.pfc = playfieldColor;
+        s.pflc = playfieldLeftColor;
+        s.pfrc = playfieldRightColor;
+        s.pfb = playfieldBackground;
+        s.pfrl = playfieldReflected;
+        s.pfsc = playfieldScoreMode;
+        s.pfp = playfieldPriority;
+        s.be = ballEnabled;
+        s.bx = ballPixel;
+        s.blp = ballLineSpritePointer;
+        s.bc = ballColor;
+        s.p0e = player0Enabled;
+        s.p0x = player0Pixel;
+        s.p0lp = player0LineSpritePointer;
+        s.p0a = player0Alt;
+        s.p0af = player0AltFrom;
+        s.p0al = player0AltLength;
+        s.p0ao = player0AltCopyOffset;
+        s.p0c = player0Color;
+        s.p1e = player1Enabled;
+        s.p1x = player1Pixel;
+        s.p1lp = player1LineSpritePointer;
+        s.p1a = player1Alt;
+        s.p1af = player1AltFrom;
+        s.p1al = player1AltLength;
+        s.p1ao = player1AltCopyOffset;
+        s.p1c = player1Color;
+        s.m0e = missile0Enabled;
+        s.m0x = missile0Pixel;
+        s.m0lp = missile0LineSpritePointer;
+        s.m0a = missile0Alt;
+        s.m0af = missile0AltFrom;
+        s.m0al = missile0AltLength;
+        s.m0ao = missile0AltCopyOffset;
+        s.m0c = missile0Color;
+        s.m1e = missile1Enabled;
+        s.m1x = missile1Pixel;
+        s.m1lp = missile1LineSpritePointer;
+        s.m1a = missile1Alt;
+        s.m1af = missile1AltFrom;
+        s.m1al = missile1AltLength;
+        s.m1ao = missile1AltCopyOffset;
+        s.m1c = missile1Color;
+        s.hmh = hMoveHitBlank;
+        s.hmc = hMoveHitClock;
+        s.hmlh = hMoveLateHit;
+        s.hmlb = hMoveLateHitBlank;
+        s.co = collisions;
+        s.cop = collisionsPossible;
+        s.cod = debugNoCollisions;
+        s.cbl = controlsButtonsLatched;
+        s.j0p = controlsJOY0ButtonPressed;
+        s.j1p = controlsJOY1ButtonPressed;
+        s.pcg = paddleCapacitorsGrounded;
+        s.pd0 = paddle0Position;
+        s.pd0c = paddle0CapacitorCharge;
+        s.pd1 = paddle1Position;
+        s.pd1c = paddle1CapacitorCharge;
+        s.CTRLPF = CTRLPF;
+        s.COLUPF = COLUPF;
+        s.COLUBK = COLUBK;
+        s.PF0 = PF0;
+        s.PF1 = PF1;
+        s.PF2 = PF2;
+        s.ENABL = ENABL;
+        s.ENABLd = ENABLd;
+        s.VDELBL = VDELBL;
+        s.NUSIZ0 = NUSIZ0;
+        s.COLUP0 = COLUP0;
+        s.REFP0 = REFP0;
+        s.GRP0 = GRP0;
+        s.GRP0d = GRP0d;
+        s.VDELP0 = VDELP0;
+        s.NUSIZ1 = NUSIZ1;
+        s.COLUP1 = COLUP1;
+        s.REFP1 = REFP1;
+        s.GRP1 = GRP1;
+        s.GRP1d = GRP1d;
+        s.VDELP1 = VDELP1;
+        s.ENAM0 = ENAM0;
+        s.RESMP0 = RESMP0;
+        s.ENAM1 = ENAM1;
+        s.RESMP1 = RESMP1;
+        s.HMP0 = HMP0;
+        s.HMP1 = HMP1;
+        s.HMM0 = HMM0;
+        s.HMM1 = HMM1;
+        s.HMBL = HMBL;
+        s.AUDC0 = AUDC0;
+        s.AUDC1 = AUDC1;
+        s.AUDF0 = AUDF0;
+        s.AUDF1 = AUDF1;
+        s.AUDV0 = AUDV0;
+        s.AUDV1 = AUDV1;
         return s;
     };
     // JDA end

@@ -40,8 +40,10 @@ jt.Ram = function() {
     // Savestate  -------------------------------------------
 
     // JDA
-    this.aokSaveState = function() {
-        return new Uint8Array(bytes);
+    this.aokSaveState = function(state) {
+        if(!state) { state = new Uint8Array(bytes.length); }
+        state.set(bytes);
+        return state;
     };
     // JDA end
 

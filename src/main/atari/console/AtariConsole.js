@@ -97,9 +97,9 @@ jt.AtariConsole = function(mainVideoClock) {
     function videoFrame() {
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
-	// JDA
-	aok.frame(aokSaveState());
-	// JDA end
+	      // JDA
+	      aok.frame(aokSaveState(aok.currentState));
+	      // JDA end
         tia.frame();
     }
 
@@ -251,12 +251,11 @@ jt.AtariConsole = function(mainVideoClock) {
     };
 
     // JDA
-    var aokSaveState = function(extended) {
-        var s = {
-            'tia': tia.aokSaveState(),
-            'ram': ram.aokSaveState(),
-            'cpu': cpu.saveState(),
-        };
+    var aokSaveState = function(s) {
+        if(!s) { s = {'tia':null, 'ram':null, 'cpu':null}; }
+        tia.aokSaveState(s.tia);
+        ram.aokSaveState(s.ram);
+        cpu.saveState(s.cpu);
         return s;
     };
     this.aokSaveState = aokSaveState;
@@ -326,10 +325,10 @@ jt.AtariConsole = function(mainVideoClock) {
         self.tia = tia;
         ram = new jt.Ram();
         bus = new jt.Bus(cpu, tia, pia, ram);
-	// JDA
+	      // JDA
 	      aok = new jt.AOK(this);
 	      cpu.connectAOK(aok, aokSaveState);
-	// JDA end
+	      // JDA end
     };
 
     var socketsCreate = function() {

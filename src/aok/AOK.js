@@ -2,61 +2,27 @@
 
 jt.AOK = function(emu) {
     "use strict";
+    
+    function init(self) {
+        self.currentState = {'tia':null, 'ram':null, 'cpu':null};
+        self.currentCopy = {'tia':null, 'ram':null, 'cpu':null};
+        self.copyIsCurrent = false;
+        self.checks = [];
+        self.matches = [];
 
-	// just for demonstration, can remove
-	var t = 0;
-
-	  function init(self) {
-        function matches(a, pat) {
-            //TODO: replace with a compiled regex later
-            if(pat % 1 === 0) {
-                return a == pat || (a == true && pat == 1) || (a == false && pat == 0);
-            } else if(Array.isArray(pat)) {
-                for(var i = 0; i < pat.length; i++) {
-                    if(matches(a, pat[i])) {
-                        return true;
-                    }
-                }
-                return false;
-            } else {
-                return (a & pat.inBits) == pat.inBits &&
-                    (a & pat.outBits) == 0;
-            }
-        }
-        function hexToCode(str) {
-            assert(str.length == 2);
-            return parseInt(str,16);
-        }
-        function decToCode(str) {
-            var num = parseInt(str,10);
-            return num;
-        }
-        function charCodesMatching(bitstr) {
-            // "\xFF"
-            assert(bitstr.length == 8);
-            var i;
-            var dontcareMask = 0;
-            var inMask = 0;
-            var outMask = 0;
-            for(i = 0; i < bitstr.length; i++) {
-                if(bitstr[i] == "-") {
-                    dontcareMask |= 1 << (7-i);
-                } else if(bitstr[i] == "1") {
-                    inMask |= 1 << (7-i);
-                } else if(bitstr[i] == "0") {
-                    outMask |= 1 << (7-i);
-                } else {
-                    assert(false);
-                }
-            }
-            return {inBits:inMask, outBits:outMask};
-        }
-        
         var memoryAnalysisContext = {
             tokens: [
                 {
                     type:"at",
-                    match: /^at:([a-zA-Z_0-9]+)(\+[0-9A-z_]+)?\(([^)]+)\)/,
+                    match: /^at:([a-zA-Z_0-9]+)(@[0-9A-z_]+)?\((!?)([^)]+)\)/,
+                    // Examples:
+                    // at:mem@0x20(AF029F)
+                    // at:cpu@A(u128)
+                    // at:mem(s-12 DED8 m0--10--- [m1000---- m0---100- FF u35])
+                    // at:mem(.* (DED8) .*) (not allowed yet)
+                    // at:mem+0x80(00), at:mem+80(01), at:mem+80(02)
+                    // (at:mem+0x80(00) & at:mem+FF(u10)), ..., at:mem+80(FF))
+                    // TODO: allow for anchoring exactly at an offset.
                     value: function(matchResult) {
                         var memBlock = matchResult[1];
                         var offset = null;
@@ -76,8 +42,9 @@ jt.AOK = function(emu) {
                                 actualOffset: actualOffset
                             };
                         }
+                        var isAnchored = matchResult[2] == "!";
                         var pattern = [];
-                        var patternStr = matchResult[2];
+                        var patternStr = matchResult[3];
                         var inSet = false;
                         while(patternStr.length) {
                             //patterns can be hex digits, unums, masks, or [] unions of those
@@ -114,7 +81,8 @@ jt.AOK = function(emu) {
                         return {
                             block:memBlock,
                             offset:offset,
-                            pattern:pattern
+                            pattern:pattern,
+                            anchored:isAnchored
                         };
                     },
                     startParse: Playspecs.Parser.parseValue
@@ -122,23 +90,30 @@ jt.AOK = function(emu) {
             ],
             trace: {
                 start: function (traceData) {
-                    return {data: traceData, index: 0};
+                    return {index:0, consumed:false};
                 },
                 currentState: function (trace) {
-                    return trace.data[trace.index];
+                    return self.currentState;
                 },
                 advanceState: function (trace) {
-                    if (trace.index < trace.data.length - 1) {
-                        trace.index++;
+                    if(!trace.consumed) {
+                        trace.index += 1;
+                        trace.consumed = true;
                     }
+                },
+                copyState: function(trace) {
+                    if(!self.copyIsCurrent) {
+                        emu.aokSaveState(self.currentCopy);
+                        self.copyIsCurrent = true;
+                    }
+                    return self.currentCopy;
                 },
                 isStreaming: function(trace) {
                     //TODO: return false if the game is off?
                     return true;
                 },
                 isAtEnd: function (trace) {
-                    // Is it at the last safe index? Note this isn't "isPastEnd"!
-                    return trace.index >= trace.data.length - 1;
+                    return trace.consumed;
                 }
             },
             checks: {
@@ -152,20 +127,20 @@ jt.AOK = function(emu) {
                     }
                     var pat = atNode.pattern;
                     var end = memblk.length;
-                    // TODO: replace with a one-pass version that searches; for now implicitly anchor on both sides
-                    end = off+1;
+                    if(atNode.isAnchored) {
+                        end = off+1;
+                    }
                     for(var i = off; i < end; i++) {
-                        if(matches(memblk[i],pat[0])) {
+                        if(bmatches(memblk[i],pat[0])) {
                             var match = true;
                             for(var j = i+1; j < i + pat.length; j++) {
-                                if(!matches(memblk[j],pat[j-i])) {
+                                if(!bmatches(memblk[j],pat[j-i])) {
                                     match = false;
                                     break;
                                 }
                             }
                             if(match) {
-                                //TODO: return the match location, update playspecs to support this
-                                return true;
+                                return {node:atNode, offset:i};
                             }
                         }
                     }
@@ -174,21 +149,83 @@ jt.AOK = function(emu) {
                 }
             }
         };
-	  }
+        return self;
+    }
 
-	  // hook called at top of frame
-	  this.frame = function(state) {
-		    // just for demonstration, can remove
-        this.frames.push(state);
-	  };
+    // hook called at top of frame; move contents of instructionDispatch in here if you want to work on frames instead of ticks or maybe use it to add a frame counter?
+    this.frame = function(state) {
+        // just for demonstration, can remove
+        // this.frames.push(state);
+    };
 
-	// hook called at instruction dispatch point
-	this.instructionDispatch = function(state) {
-		// just for demonstration, can remove
-		if (t++ < 50) {
-			console.info(state);
-		}
-	};
+    function bmatches(a, pat) {
+        //TODO: replace with a compiled regex later
+        if(pat % 1 === 0) {
+            return a == pat || (a == true && pat == 1) || (a == false && pat == 0);
+        } else if(Array.isArray(pat)) {
+            for(var i = 0; i < pat.length; i++) {
+                if(bmatches(a, pat[i])) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return (a & pat.inBits) == pat.inBits &&
+                (a & pat.outBits) == 0;
+        }
+    }
+    function hexToCode(str) {
+        assert(str.length == 2);
+        return parseInt(str,16);
+    }
+    function decToCode(str) {
+        var num = parseInt(str,10);
+        return num;
+    }
+    function charCodesMatching(bitstr) {
+        // "\xFF"
+        assert(bitstr.length == 8);
+        var i;
+        var dontcareMask = 0;
+        var inMask = 0;
+        var outMask = 0;
+        for(i = 0; i < bitstr.length; i++) {
+            if(bitstr[i] == "-") {
+                dontcareMask |= 1 << (7-i);
+            } else if(bitstr[i] == "1") {
+                inMask |= 1 << (7-i);
+            } else if(bitstr[i] == "0") {
+                outMask |= 1 << (7-i);
+            } else {
+                assert(false);
+            }
+        }
+        return {inBits:inMask, outBits:outMask};
+    }
 
-	  init(this);
+    // hook called at instruction dispatch point
+    this.instructionDispatch = function(state) {
+        this.currentState = state;
+        for(var i = 0; i < this.checks.length; i++) {
+            this.checks[i] = this.checks[i].next();
+            if(this.checks[i].match) {
+                this.processMatch(i, this.checks[i]);
+            }
+            this.checks[i].state.trace.consumed = false;
+        }
+        this.copyIsCurrent = false;
+    };
+
+    this.start = function(playspecs) {
+        for(var i = 0; i < playspecs.length; i++) {
+            this.checks[i] = playspecs[i].match(null, true);
+            this.matches[i] = [];
+        }
+    };
+
+    this.processMatch = function(idx, checkResult) {
+        this.matches[idx].push(checkResult.match);
+    };
+
+    return init(this);
 };
