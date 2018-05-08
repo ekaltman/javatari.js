@@ -2,10 +2,15 @@
 
 jt.AOK = function(emu) {
     "use strict";
+
+    function emptyState() {
+        return {'tia':null, 'ram':null, 'cpu':null};
+    }
     
     function init(self) {
-        self.currentState = {'tia':null, 'ram':null, 'cpu':null};
-        self.currentCopy = {'tia':null, 'ram':null, 'cpu':null};
+        self.checked_specs = [];
+        self.currentState = emptyState();
+        self.currentCopy = emptyState();
         self.copyIsCurrent = false;
         self.checks = [];
         self.matches = [];
@@ -90,7 +95,7 @@ jt.AOK = function(emu) {
             ],
             trace: {
                 start: function (traceData) {
-                    return {index:0, consumed:false};
+                    return {index:0, consumed:true};
                 },
                 currentState: function (trace) {
                     return self.currentState;
@@ -152,12 +157,6 @@ jt.AOK = function(emu) {
         return self;
     }
 
-    // hook called at top of frame; move contents of instructionDispatch in here if you want to work on frames instead of ticks or maybe use it to add a frame counter?
-    this.frame = function(state) {
-        // just for demonstration, can remove
-        // this.frames.push(state);
-    };
-
     function bmatches(a, pat) {
         //TODO: replace with a compiled regex later
         if(pat % 1 === 0) {
@@ -216,13 +215,30 @@ jt.AOK = function(emu) {
         this.copyIsCurrent = false;
     };
 
-    this.start = function(playspecs) {
+    // hook called at top of frame; move contents of instructionDispatch in here
+    // if you want to work on frames instead of ticks or maybe use it to add a
+    // frame counter?
+    this.frame = function(state) {
+        
+    };
+
+    // Call this to make this instance of AOK start matching the given traces.
+    // TODO AOK: You probably want to call it before the emulator starts!
+    this.startMatching = function(playspecs) {
+        this.currentState = emptyState();
+        this.copyIsCurrent = false;
+        this.copyState = emptyState();
+        this.matches = [];
+        this.checks = [];
         for(var i = 0; i < playspecs.length; i++) {
-            this.checks[i] = playspecs[i].match(null, true);
-            this.matches[i] = [];
+            this.checks.push(playspecs[i].match(null, true));
+            this.matches.push([]);
         }
     };
 
+    // Implement this however you like to handle matches.
+    // Probably best to not use a "matches" list like this,
+    // just flag them however you want.  This is just for illustration.
     this.processMatch = function(idx, checkResult) {
         this.matches[idx].push(checkResult.match);
     };
