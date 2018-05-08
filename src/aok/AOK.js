@@ -225,6 +225,20 @@ jt.AOK = function(emu) {
     // Call this to make this instance of AOK start matching the given traces.
     // TODO AOK: You probably want to call it before the emulator starts!
     this.startMatching = function(playspecs) {
+        //atomic formula syntax for "scan through memory region for pattern":
+        //at:MEM@OFF(ANCHOR PAT+)
+        //Where:
+        //  MEM: tia | cpu | mem
+        //  OFF (optional): register_name | 0xOffset [beginning of search]
+        //  ANCHOR (optional): !, force match to be exactly at MEM+OFF.
+        //  PAT: HEXPAIR | UNSIGNED | MASK | SET
+        //    HEXPAIR: two hex digits
+        //    UNSIGNED: unsigned decimal value prefixed with 'u'
+        //    MASK: 'm' followed by 8 characters from the set {0,1,-}.  0 means "the byte being matched must be 0 here", 1 means it must be 1, and - means "don't care".  ex: m0010---- to check some high bits.
+        //    SET: [ PAT+ ] to check the disjunction of several patterns
+        //    Whitespace and underscores are ignored.
+        //the check results will tell you where the pattern was matched, which is better than nothing!
+        //for the full playspecs syntax please see the AIIDE paper or the playspecs doc/ folder.
         this.currentState = emptyState();
         this.copyIsCurrent = false;
         this.copyState = emptyState();
