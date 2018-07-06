@@ -87,7 +87,9 @@ module.exports = function (grunt) {
                     "src/main/userprefs/UserROMFormats.js",
                     "src/runtime/images/EmbeddedImages.js",
                     "src/main/Configurator.js",
-                    "src/main/Launcher.js"
+                    "src/main/Launcher.js",
+		    "src/playspecs-js/dist/bundle.js",
+		    "src/aok/AOK.js",
                 ],
                 dest: "temp/javatari.part.js"
             },
@@ -114,10 +116,8 @@ module.exports = function (grunt) {
                     maxLineLen: 7900,
                     mangle: {
                         toplevel: true,
-                        screw_ie8: true
                     },
                     compress: {
-                        screw_ie8: true,
                         sequences: true,
                         dead_code: true,
                         drop_debugger: true,
@@ -130,7 +130,6 @@ module.exports = function (grunt) {
                         if_return: true,
                         hoist_funs: true,
                         join_vars: true,
-                        cascade: true,
                         unsafe: false
                     }
                 },
@@ -161,7 +160,7 @@ module.exports = function (grunt) {
 
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-concat");
-    grunt.loadNpmTasks("grunt-contrib-uglify");
+    grunt.loadNpmTasks("grunt-contrib-uglify-es");
     grunt.loadNpmTasks("grunt-contrib-copy");
     grunt.registerTask("default", [
         "clean:init",
