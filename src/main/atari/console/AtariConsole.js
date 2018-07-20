@@ -253,9 +253,9 @@ jt.AtariConsole = function(mainVideoClock) {
     // JDA
     var aokSaveState = function(s) {
         if(!s) { s = {'tia':null, 'ram':null, 'cpu':null}; }
-        tia.aokSaveState(s.tia);
-        ram.aokSaveState(s.ram);
-        cpu.saveState(s.cpu);
+        s.tia = tia.aokSaveState(s.tia);
+        s.ram = ram.aokSaveState(s.ram);
+        s.cpu = cpu.saveState(s.cpu);
         return s;
     };
     this.aokSaveState = aokSaveState;

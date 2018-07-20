@@ -20,7 +20,7 @@ jt.AOK = function(emu) {
                     var memBlock = matchResult[1];
                     var offset = null;
                     if(matchResult[2]) {
-                        var offsetStr = matchResult[1].substr(1);
+                        var offsetStr = matchResult[2].substr(1);
                         var isNumeric = false;
                         var actualOffset = offsetStr;
                         if(offsetStr.match(/^0x([0-9a-fA-F_]+)$/)) {
@@ -78,12 +78,15 @@ jt.AOK = function(emu) {
                         anchored:isAnchored
                     };
                 },
-                startParse: Playspecs.Parser.parseValue
+                startParse: Playspecs.parseValue
             }
         ],
         trace: {
             start: function (traceData) {
-                return {index:0, consumed:true};
+                return {index: -1, consumed:true};
+            },
+            isReady: function(trace) {
+                return trace.index > -1;
             },
             currentState: function (trace) {
                 return self.currentState;
@@ -111,12 +114,13 @@ jt.AOK = function(emu) {
         },
         checks: {
             "at": function(trace, state, idx, atNode) {
-                var memblk = state[atNode.memBlock];
+                // console.log(state);
+                var memblk = state[atNode.value.block];
                 var off = 0;
-                if(atNode.offset.isNumeric) {
-                    off = atNode.offset.actualOffset;
+                if(atNode.value.offset.isNumeric) {
+                    off = atNode.value.offset.actualOffset;
                 } else {
-                    memblk = memblk[atNode.offset];
+                    memblk = memblk[atNode.value.offset.actualOffset];
                 }
                 var pat = atNode.pattern;
                 var end = memblk.length;
@@ -141,7 +145,7 @@ jt.AOK = function(emu) {
                 return null;
             }
         }
-    };
+        };
 
     function emptyState() {
         return {'tia':null, 'ram':null, 'cpu':null};
@@ -204,15 +208,21 @@ jt.AOK = function(emu) {
 
     // hook called at instruction dispatch point
     this.instructionDispatch = function(state) {
-        this.currentState = state;
-        for(var i = 0; i < this.checks.length; i++) {
-            this.checks[i] = this.checks[i].next();
-            if(this.checks[i].match) {
-                this.processMatch(i, this.checks[i]);
+        self.currentState = state;
+        for(var i = 0; i < self.checks.length; i++) {
+            if(self.checks[i].state.trace.index == -1) {
+                // console.log("start with state",state);
+                self.checks[i].state.trace.index = 0;
+                self.checks[i].state.trace.consumed = false;
             }
-            this.checks[i].state.trace.consumed = false;
+            self.checks[i] = self.checks[i].next();
+            if(self.checks[i].match) {
+                self.processMatch(i, self.checks[i]);
+            }
+            // console.log("consume");
+            self.checks[i].state.trace.consumed = true;
         }
-        this.copyIsCurrent = false;
+        self.copyIsCurrent = false;
     };
 
     // hook called at top of frame; move contents of instructionDispatch in here
@@ -239,14 +249,14 @@ jt.AOK = function(emu) {
         //    Whitespace and underscores are ignored.
         //the check results will tell you where the pattern was matched, which is better than nothing!
         //for the full playspecs syntax please see the AIIDE paper or the playspecs doc/ folder.
-        this.currentState = emptyState();
-        this.copyIsCurrent = false;
-        this.copyState = emptyState();
-        this.matches = [];
-        this.checks = [];
+        self.currentState = emptyState();
+        self.copyIsCurrent = false;
+        self.copyState = emptyState();
+        self.matches = [];
+        self.checks = [];
         for(var i = 0; i < playspec_strings.length; i++) {
-            this.checks.push((new Playspecs.Playspec(playspec_strings[i], memoryAnalysisContext)).match(null, "explicit"));
-            this.matches.push([]);
+            self.checks.push((new Playspecs.Playspec(playspec_strings[i], memoryAnalysisContext)).match(null, "explicit"));
+            self.matches.push([]);
         }
     };
 
@@ -256,6 +266,9 @@ jt.AOK = function(emu) {
     this.processMatch = function(idx, checkResult) {
         this.matches[idx].push(checkResult.match);
     };
-
+    // var ps = (new Playspecs.Playspec("at:cpu@A(u128)",
+	  // memoryAnalysisContext)).match(null,
+		// "explicit");
+    
     return init(this);
 };
