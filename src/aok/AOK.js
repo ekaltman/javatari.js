@@ -3,6 +3,13 @@
 jt.AOK = function(emu) {
     "use strict";
 
+    function assert(b) {
+        if(!b) {
+            console.error("Assertion failed",b);
+            throw "Assertion failed";
+        }
+    }
+
     var memoryAnalysisContext = {
         tokens: [
             {
@@ -35,9 +42,9 @@ jt.AOK = function(emu) {
                             actualOffset: actualOffset
                         };
                     }
-                    var isAnchored = matchResult[2] == "!";
+                    var isAnchored = matchResult[3] == "!";
                     var pattern = [];
-                    var patternStr = matchResult[3];
+                    var patternStr = matchResult[4];
                     var inSet = false;
                     while(patternStr.length) {
                         //patterns can be hex digits, unums, masks, or [] unions of those
