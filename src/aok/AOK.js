@@ -2,6 +2,7 @@
 
 jt.AOK = function(emu) {
     "use strict";
+    var self;
 
     function assert(b) {
         if(!b) {
@@ -228,7 +229,7 @@ jt.AOK = function(emu) {
         }
         // process any found matches, obeying language semantics re: continue
         // XXX continue nyi
-        for (var i = 0; i < lstate.spalist.length; i++) {
+        for (i = 0; i < lstate.spalist.length; i++) {
             ps = lstate.spalist[i][1];
             if (ps.match) {
                 console.log("match on spalist index " + i);
@@ -303,8 +304,8 @@ jt.AOK = function(emu) {
         referenced: null, // state names referenced
         seenused: null, // state names seen (statically) used in spec
         continue: null, // tmp flag for communicating back to processing
-        spalist:  null, // state-pattern-action (ordered) list
-    }
+        spalist:  null // state-pattern-action (ordered) list
+    };
 
     //function resetlangstate() {
     this.resetlangstate = function() {
@@ -398,7 +399,7 @@ jt.AOK = function(emu) {
             'message':  [ 'w',    c_message ],
             'bubble': [ 'cw',   c_bubble ],
             'continue': [ '',   c_continue ],
-            'eval':   [ 'w',    c_eval ], // for Eric :-)
+            'eval':   [ 'w',    c_eval ] // for Eric :-)
         }
 
         // Scanner returns lexemes whose token type can be distinguished
@@ -690,5 +691,5 @@ jt.AOK = function(emu) {
         }
     };
 
-    return init(this);
+    return (self = init(this));
 };
