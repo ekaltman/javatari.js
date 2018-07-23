@@ -152,19 +152,17 @@ jt.AOK = function(emu) {
                 return null;
             }
         }
-        };
+    };
 
     function emptyState() {
         return {'tia':null, 'ram':null, 'cpu':null};
     }
-    
+
     function init(self) {
         self.checked_specs = [];
         self.currentState = emptyState();
         self.currentCopy = emptyState();
         self.copyIsCurrent = false;
-        self.checks = [];
-        self.matches = [];
         return self;
     }
 
@@ -213,35 +211,56 @@ jt.AOK = function(emu) {
         return {inBits:inMask, outBits:outMask};
     }
 
-    // hook called at instruction dispatch point
-    this.instructionDispatch = function(state) {
+    // common matching code for instrs and frames
+    this.domatch = function(state) {
+        // walk through entirety of spalist to update playspec state
+        // even if the matches aren't used (XXX needed?)
+        var ps;
         self.currentState = state;
-        for(var i = 0; i < self.checks.length; i++) {
-            if(self.checks[i].state.trace.index == -1) {
-                // console.log("start with state",state);
-                self.checks[i].state.trace.index = 0;
-                self.checks[i].state.trace.consumed = false;
+        for (var i = 0; i < lstate.spalist.length; i++) {
+            ps = lstate.spalist[i][1];
+            if (ps.state.trace.index == -1) {
+                ps.state.trace.index = 0;
+                ps.state.trace.consumed = false;
             }
-            self.checks[i] = self.checks[i].next();
-            if(self.checks[i].match) {
-                self.processMatch(i, self.checks[i]);
+            ps = ( lstate.spalist[i][1] = ps.next() );
+            ps.state.trace.consumed = true;
+        }
+        // process any found matches, obeying language semantics re: continue
+        // XXX continue nyi
+        for (var i = 0; i < lstate.spalist.length; i++) {
+            ps = lstate.spalist[i][1];
+            if (ps.match) {
+                console.log("match on spalist index " + i);
             }
-            // console.log("consume");
-            self.checks[i].state.trace.consumed = true;
         }
         self.copyIsCurrent = false;
     };
 
-    // hook called at top of frame; move contents of instructionDispatch in here
-    // if you want to work on frames instead of ticks or maybe use it to add a
-    // frame counter?
+    // hook called at instruction dispatch point
+    this.instructionDispatch = function(state) {
+        if (lstate.frame_on == false) {
+            this.domatch(state);
+        }
+    };
+
+    // hook called at top of frame
     this.frame = function(state) {
-        
+        if (lstate.frame_on == true) {
+            this.domatch(state);
+        }
+    };
+
+    // initialize playspec matching state
+    this.initMatching = function() {
+        self.currentState = emptyState();
+        self.copyIsCurrent = false;
+        self.copyState = emptyState();
     };
 
     // Call this to make this instance of AOK start matching the given traces.
     // TODO AOK: You probably want to call it before the emulator starts!
-    this.startMatching = function(playspec_strings) {
+    this.__UNUSED__startMatching = function(playspec_strings) {
         //atomic formula syntax for "scan through memory region for pattern":
         //at:MEM@OFF(ANCHOR PAT+)
         //Where:
@@ -270,12 +289,406 @@ jt.AOK = function(emu) {
     // Implement this however you like to handle matches.
     // Probably best to not use a "matches" list like this,
     // just flag them however you want.  This is just for illustration.
-    this.processMatch = function(idx, checkResult) {
+    this.__UNUSED__processMatch = function(idx, checkResult) {
         this.matches[idx].push(checkResult.match);
     };
-    // var ps = (new Playspecs.Playspec("at:cpu@A(u128)",
-	  // memoryAnalysisContext)).match(null,
-		// "explicit");
-    
+
+
+    // language state
+    var lstate = {
+        throttle: null, // emu speed XXX to do
+        frame_on: null, // frame or instr matching
+        curstate: null, // current matching state, '' is normal
+        start:    null, // list of <START> actions, if any
+        referenced: null, // state names referenced
+        seenused: null, // state names seen (statically) used in spec
+        continue: null, // tmp flag for communicating back to processing
+        spalist:  null, // state-pattern-action (ordered) list
+    }
+
+    //function resetlangstate() {
+    this.resetlangstate = function() {
+        lstate.throttle = 100;
+        lstate.frame_on = false;
+        lstate.curstate = '';
+        lstate.start = null;
+        lstate.referenced = {};
+        lstate.seenused = {};
+        lstate.continue = false;
+        lstate.spalist = [];
+        // and clear playspec state
+        this.initMatching();
+    }
+
+    // command implementations - add new ones to ctab too
+    function c_frame() {
+        lstate.frame_on = true;
+    }
+    function c_instr() {
+        lstate.frame_on = false;
+    }
+    function c_throttle(n) {
+        if (n < 1) {      // quietly clamp value
+            n = 1;
+        } else if (n > 100) {
+            n = 100;
+        }
+        lstate.throttle = n;
+    }
+    function c_begin(name) {
+        lstate.curstate = name;
+    }
+    function c_log(s) {
+        console.log(s);
+    }
+    function c_continue(s) {
+        lstate.continue = true;
+    }
+    function c_eval(s) {
+        eval(s);
+    }
+
+    // XXX nyi
+    function c_highlight(coord) {
+        console.log("NYI: highlight " + coord);
+    }
+    function c_normal(coord) {
+        console.log("NYI: normal " + coord);
+    }
+    function c_message(s) {
+        console.log("NYI: message " + s);
+    }
+    function c_bubble(coord, s) {
+        console.log("NYI: bubble " + coord + " " + s);
+    }
+
+    // run a list of commands
+    function runcmds(L) {
+        var i, s, f, args;
+        for (i = 0; i < L.length; i++) {
+            f = L[i][0];
+            args = L[i][1];
+            try {
+                f.apply(null, args);
+            } catch (s) {
+                console.log(s);
+                return;
+            }
+        }
+    }
+
+    this.newfile = function(s) {
+        var error, last = null, lineno = 1;
+
+        // Command table, maps command name into arg-type/function.
+        // Argument type encodings are
+        //  n positive integer
+        //  c spreadsheet coordinate
+        //  w word (or quoted string)
+        //  s state name
+        //
+        var ctab = {
+            'throttle': [ 'n',    c_throttle ],
+            'frame':  [ '',   c_frame ],
+            'instr':  [ '',   c_instr ],
+            'begin':  [ 's',    c_begin ],
+            'log':    [ 'w',    c_log ],
+            'highlight':  [ 'c',    c_highlight ],
+            'normal': [ 'c',    c_normal ],
+            'message':  [ 'w',    c_message ],
+            'bubble': [ 'cw',   c_bubble ],
+            'continue': [ '',   c_continue ],
+            'eval':   [ 'w',    c_eval ], // for Eric :-)
+        }
+
+        // Scanner returns lexemes whose token type can be distinguished
+        // based on the first character:
+        //  a at:...
+        //  , ,
+        //  & &
+        //  < <state>
+        //  { {
+        //  } }
+        //  " "word"
+        //  \n  \n
+        //  $ EOF
+        //  ? wtf?
+        //
+        var peek = function() {
+            if (last != null) {
+                return last;
+            }
+            return last = lex();
+        }
+
+        var lex = function() {
+            var rv, m, re;
+
+            if (last != null) {
+                rv = last;
+                last = null;
+                return rv;
+            }
+
+            while (true) {
+                // skip whitespace except \n
+                re = /^[ \t\r]+/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    continue;
+                }
+                // skip comments
+                re = /^\/\/[^\n]*/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    continue;
+                }
+                // EOF
+                if (s.length == 0) {
+                    return '$';
+                }
+                // pick off singletons
+                switch (rv = s[0]) {
+                case '\n':
+                    lineno += 1;
+                    // falls through
+                case '{':
+                case '}':
+                case ',':
+                case '&':
+                    s = s.slice(1);
+                    return rv;
+                }
+                // states
+                re = /^<\w+>/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    return m[0];
+                }
+                // (single) at:... expressions
+                re = /^at:\w+(@\w+)?\((!?)([^)]+)\)/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    return m[0];
+                }
+                // unquoted word
+                re = /^\w+/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    return '"' + m[0] + '"';
+                }
+                // quoted text
+                re = /^"[^\n"]*"/g;
+                if ((m = re.exec(s)) !== null) {
+                    s = s.slice(re.lastIndex);
+                    return m[0];
+                }
+                // lexical error - advance one char
+                s = s.slice(1);
+                return '?';
+            }
+        }
+
+        // Ye olde recursive descent parser, for the grammar
+        //
+        // start ::= { globalstmt } EOF
+        // globalstmt ::= '\n'
+        // globalstmt ::= STATE action
+        // globalstmt ::= [ STATE ] atexpr action
+        // action ::= stmt
+        // action ::= '{' { stmt } '}'
+        // stmt ::= { WORD } '\n'
+        // atexpr ::= AT { ( ',' | '&' ) AT }
+        //
+        var checkargs = function(cmd, args) {
+            var i, re, cargs = ctab[cmd][0];
+            if (args.length < ctab[cmd][0].length) {
+                throw "not enough arguments for " + cmd;
+            }
+            if (args.length > ctab[cmd][0].length) {
+                throw "too many arguments for " + cmd;
+            }
+            for (i = 0; i < cargs.length; i++) {
+                switch (cargs[i]) {
+                case 'n':
+                    re = /^\d+$/;
+                    if (re.test(args[i]) == false) {
+                        throw "bad number for " + cmd;
+                    }
+                    break;
+                case 'c':
+                    re = /^[A-Z]+\d+$/;
+                    if (re.test(args[i]) == false) {
+                        throw "bad coordinate for " + cmd;
+                    }
+                    break;
+                case 's':
+                    // * not + to allow return to "" state
+                    re = /^\w*$/;
+                    if (re.test(args[i]) == false) {
+                        throw "bad state name for " + cmd;
+                    }
+                    if (args[i] == 'START') {
+                        throw "can't use START for " + cmd;
+                    }
+                    lstate.referenced[args[i]] = true;
+                    break;
+                case 'w':
+                    // whatevs
+                    break;
+                default:
+                    console.log("bad ctab arg spec (INTERNAL)");
+                    break;
+                }
+            }
+        }
+
+        var stmt = function() {
+            var t, words = [];
+            while ((t = lex())[0] == '"')
+                words.push(t.slice(1, -1));
+            if (t != '\n') {
+                throw "statement should be words then newline";
+            }
+
+            // now check it
+            if (words.length == 0) {
+                return null;
+            }
+            var cmd;
+            for (cmd in ctab) {
+                if (words[0] == cmd) {
+                    var args = words.slice(1);
+                    checkargs(cmd, args);
+                    return [ ctab[cmd][1], args ];
+                }
+            }
+            console.log("Warning: unknown command "+ words[0] +" skipped");
+            return null;
+        }
+
+        var action = function() {
+            var S, L = [];
+            if (peek() != '{') {
+                S = stmt();
+                return (S === null) ? [] : [ S ];
+            } else {
+                lex();        // consume {
+                while (peek() != '}') {
+                    S = stmt();
+                    if (S !== null) {
+                        L.push(S);
+                    }
+                }
+                lex();        // consume }
+                return L;
+            }
+        }
+
+        var atexpr = function() {
+            var t, expr = '';
+            if ((t = lex())[0] != 'a') {
+                throw 'expected "at" expression';
+            }
+            expr = t;
+            while (peek() == ',' || peek() == '&') {
+                expr += lex();
+                if ((t = lex())[0] != 'a') {
+                    throw 'expected more "at" expressions';
+                }
+                expr += t;
+            }
+            return expr;
+        }
+
+        var makePS = function(expr) {
+            // Utility function wrapping playspec creation.
+            //
+            // XXX An exception object's thrown by PS for malformed
+            //  expressions, and long-term should get caught,
+            //  re-formatted as a string, and thrown anew, but the
+            //  info's too useful for debugging right now.
+            //
+            var p = new Playspecs.Playspec(expr, memoryAnalysisContext);
+            return p.match(null, "explicit");
+        }
+
+        var globalstmt = function() {
+            var s = '', t = peek();
+            switch (t[0]) {
+            case '\n':
+                lex();
+                break;
+            case '<':
+                s = t.slice(1, -1);
+                lstate.seenused[s] = true;
+
+                lex();
+                if (peek()[0] != 'a') {
+                    if (s != 'START') {
+                        throw "can only omit at-expr for START";
+                    }
+                    if (lstate.start !== null) {
+                        throw "can only specify START once";
+                    }
+                    lstate.start = action();
+                    break;
+                }
+                // falls through
+            case 'a':
+                var expr = atexpr();
+                var actions = action();
+                var ps = makePS(expr);
+                lstate.spalist.push([ s, ps, actions ])
+                break;
+            default:
+                throw "expected pattern";
+            }
+        }
+
+        var start = function() {
+            while (peek() != '$') {
+                globalstmt();
+            }
+            if (lex() != '$') {
+                throw "expected EOF";
+            }
+        }
+
+        // parse through spec file
+        this.resetlangstate();
+        try {
+            start();
+        } catch (error) {
+            console.log("Error: " + error + " at or near line " + lineno);
+            this.resetlangstate();
+            return;
+        }
+
+        // typo checks on state names
+        var name;
+        for (name in lstate.referenced) {
+            if (name == '') {
+                continue;
+            }
+            if (!(name in lstate.seenused)) {
+                console.log("Warning: undefined state " +name+ " used");
+            }
+        }
+        for (name in lstate.seenused) {
+            if (name == 'START') {
+                continue;
+            }
+            if (!(name in lstate.referenced)) {
+                console.log("Warning: no begin uses state " + name);
+            }
+        }
+
+        // run initial commands, if any
+        if (lstate.start !== null) {
+            runcmds(lstate.start);
+        }
+    };
+
     return init(this);
 };
