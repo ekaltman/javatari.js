@@ -1,7 +1,7 @@
 // Copyright 2015 by Paulo Augusto Peccin. See license.txt distributed with this file.
 
 jt.AtariConsole = function(mainVideoClock) {
-    "use strict";
+"use strict";
 
     var self = this;
 
@@ -22,27 +22,27 @@ jt.AtariConsole = function(mainVideoClock) {
         updateVideoSynchronization();
         videoStandardAutoDetectionStart();
         consoleControlsSocket.firePowerAndUserPauseStateUpdate();
-        // JDA
-        // XXX feed in a static string for now to test - would normally load this
-        // via XMLHttpRequest, but for now, it's template literals ftw
-        aok.newfile(`
+// JDA
+// XXX feed in a static string for now to test - would normally load this
+//	via XMLHttpRequest, but for now, it's template literals ftw
+aok.newfile(`
 // Language based on [f]lex,
 // a list of pattern/action pairs, basically.
 // Actions are white-space separated command + arguments, like shell commands.
 
 // Actions (initial values in parens):
-// throttle n    -- throttle speed of emulator, n=1-100 (100)
-// match frame|instr -- match on frame or per-instruction (instr)
-// highlight XY    -- highlight XY in status display
-// normal XY   -- unhighlight XY in status display
-// log arg1...   -- log message to JS console
-// message arg1...   -- message to show in status display
-// bubble XY arg1... -- like a "speech bubble" with message tied
-//         to some XY coord in status display
-// begin state   -- change to specified state
-// continue    -- keep trying additional patterns, else
-//         only first pattern matched applies;
-//         order in spec file is significant
+//	throttle n		-- throttle speed of emulator, n=1-100 (100)
+//	match frame|instr	-- match on frame or per-instruction (instr)
+//	highlight XY		-- highlight XY in status display
+//	normal XY		-- unhighlight XY in status display
+//	log arg1...		-- log message to JS console
+//	message arg1...		-- message to show in status display
+//	bubble XY arg1...	-- like a "speech bubble" with message tied
+//					to some XY coord in status display
+//	begin state		-- change to specified state
+//	continue		-- keep trying additional patterns, else
+//					only first pattern matched applies;
+//					order in spec file is significant
 
 // May also want modal-message and model-bubble?
 
@@ -58,35 +58,35 @@ jt.AtariConsole = function(mainVideoClock) {
 // the best sense, or if the label is undefined then we'd just log a JS
 // console warning.
 
-at:cpu@PC(f000)   {
-        frame
-        log "Start address reached!"
-      }
+at:cpu@PC(f000)		{
+				frame
+				log "Start address reached!"
+			}
 
 // Simplest case: pattern + single action.
-at:cpu@A(u128)    throttle 50
+//at:cpu@A(u128)		throttle 50
 
 // Pattern + multiple actions.
-at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
-    highlight K7
-    log "Ah, memories..."
-    begin foo
-    begin ""
-  }
+//at:mem@0x80(00), at:mem@80(01), at:mem@80(02)	{
+//		highlight K7
+//		log "Ah, memories..."
+//		begin foo
+//		begin ""
+//	}
 
 // Pattern that only applies in state foo (states are exclusive).
-<foo> at:mem@0x20(AF029F) bubble F15 "Hello, world!"
+//<foo> at:mem@0x20(AF029F)	bubble F15 "Hello, world!"
 
 // Special case: actions run initially.  Placement in file doesn't matter.
-<START>   {
-      //frame
-      log Hello
-      log "  World!"
-    }
+<START>		{
+			//frame
+			log Hello
+			log "  World!"
+		}
 
 // On state names: could require them to be declared to catch user typos.
 `);
-        // JDA end
+// JDA end
     };
 
     this.powerOff = function() {
@@ -162,9 +162,9 @@ at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
     function videoFrame() {
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
-        // JDA
-        aok.frame(aokSaveState(aok.currentState));
-        // JDA end
+	      // JDA
+	      aok.frame(aokSaveState(aok.currentState));
+	      // JDA end
         tia.frame();
     }
 
@@ -205,9 +205,9 @@ at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
         var user = Javatari.userPreferences.current.vSynch;
         vSynchMode = Javatari.SCREEN_VSYNCH_MODE !== -1 && boo
             ? Javatari.SCREEN_VSYNCH_MODE >= 0
-            ? Javatari.SCREEN_VSYNCH_MODE
-            : user !== null && user >= 0 ? user : 1
-        : -1;
+                ? Javatari.SCREEN_VSYNCH_MODE
+                : user !== null && user >= 0 ? user : 1
+            : -1;
     };
 
     function vSynchToggleMode() {
@@ -390,10 +390,10 @@ at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
         self.tia = tia;
         ram = new jt.Ram();
         bus = new jt.Bus(cpu, tia, pia, ram);
-        // JDA
-        aok = new jt.AOK(this);
-        cpu.connectAOK(aok, aokSaveState);
-        // JDA end
+	      // JDA
+	      aok = new jt.AOK(this);
+	      cpu.connectAOK(aok, aokSaveState);
+	      // JDA end
     };
 
     var socketsCreate = function() {
@@ -479,70 +479,70 @@ at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
         // Toggles
         if (!state) return;
         switch (control) {
-        case controls.POWER:
-            if (self.powerIsOn) self.powerOff();
-            else self.userPowerOn();
-            break;
-        case controls.POWER_OFF:
-            if (self.powerIsOn) self.powerOff();
-            break;
-        case controls.POWER_FRY:
-            powerFry();
-            break;
-        case controls.PAUSE:
-            self.userPause(!userPaused, false);
-            self.getVideoOutput().showOSD(userPaused ? "PAUSE" : "RESUME", true);
-            return;
-        case controls.PAUSE_AUDIO_ON:
-            self.userPause(!userPaused, true);
-            self.getVideoOutput().showOSD(userPaused ? "PAUSE with AUDIO ON" : "RESUME", true);
-            return;
-        case controls.FRAME:
-            if (userPaused) userPauseMoreFrames = 1;
-            return;
-        case controls.INC_SPEED: case controls.DEC_SPEED: case controls.NORMAL_SPEED: case controls.MIN_SPEED:
-            var speedIndex = SPEEDS.indexOf(speedControl);
-            if (control === controls.INC_SPEED && speedIndex < SPEEDS.length - 1) ++speedIndex;
-            else if (control === controls.DEC_SPEED && speedIndex > 0) --speedIndex;
-            else if (control === controls.MIN_SPEED) speedIndex = 0;
-            else if (control === controls.NORMAL_SPEED) speedIndex = SPEEDS.indexOf(1);
-            speedControl = SPEEDS[speedIndex];
-            self.showOSD("Speed: " + ((speedControl * 100) | 0) + "%", true);
-            videoClockUpdateSpeed();
-            break;
-        case controls.SAVE_STATE_0: case controls.SAVE_STATE_1: case controls.SAVE_STATE_2: case controls.SAVE_STATE_3: case controls.SAVE_STATE_4: case controls.SAVE_STATE_5:
-        case controls.SAVE_STATE_6: case controls.SAVE_STATE_7: case controls.SAVE_STATE_8: case controls.SAVE_STATE_9: case controls.SAVE_STATE_10: case controls.SAVE_STATE_11: case controls.SAVE_STATE_12:
-            var wasPaused = self.systemPause(true);
-            saveStateSocket.saveState(control & 0xff);  // get binary encoded slot number
-            if (!wasPaused) self.systemPause(false);
-            break;
-        case controls.SAVE_STATE_FILE:
-            wasPaused = self.systemPause(true);
-            saveStateSocket.saveStateFile();
-            if (!wasPaused) self.systemPause(false);
-            break;
-        case controls.LOAD_STATE_0: case controls.LOAD_STATE_1: case controls.LOAD_STATE_2: case controls.LOAD_STATE_3: case controls.LOAD_STATE_4: case controls.LOAD_STATE_5:
-        case controls.LOAD_STATE_6: case controls.LOAD_STATE_7: case controls.LOAD_STATE_8: case controls.LOAD_STATE_9: case controls.LOAD_STATE_10: case controls.LOAD_STATE_11: case controls.LOAD_STATE_12:
-            wasPaused = self.systemPause(true);
-            saveStateSocket.loadState(control & 0xff);  // get binary encoded slot number
-            if (!wasPaused) self.systemPause(false);
-            break;
-        case controls.VIDEO_STANDARD:
-            if (videoStandardIsAuto) setVideoStandardForced(jt.VideoStandard.NTSC);
-            else if (videoStandard == jt.VideoStandard.NTSC) setVideoStandardForced(jt.VideoStandard.PAL);
-            else setVideoStandardAuto(true);
-            showVideoStandardMessage();
-            break;
-        case controls.VSYNCH:
-            vSynchToggleMode();
-            break;
-        case controls.CARTRIDGE_FORMAT:
-            cycleCartridgeFormat();
-            break;
-        case controls.DEFAULTS:
-            setDefaults();
-            self.showOSD("Default Settings", true);
-            break;
+            case controls.POWER:
+                if (self.powerIsOn) self.powerOff();
+                else self.userPowerOn();
+                break;
+            case controls.POWER_OFF:
+                if (self.powerIsOn) self.powerOff();
+                break;
+            case controls.POWER_FRY:
+                powerFry();
+                break;
+            case controls.PAUSE:
+                self.userPause(!userPaused, false);
+                self.getVideoOutput().showOSD(userPaused ? "PAUSE" : "RESUME", true);
+                return;
+            case controls.PAUSE_AUDIO_ON:
+                self.userPause(!userPaused, true);
+                self.getVideoOutput().showOSD(userPaused ? "PAUSE with AUDIO ON" : "RESUME", true);
+                return;
+            case controls.FRAME:
+                if (userPaused) userPauseMoreFrames = 1;
+                return;
+            case controls.INC_SPEED: case controls.DEC_SPEED: case controls.NORMAL_SPEED: case controls.MIN_SPEED:
+                var speedIndex = SPEEDS.indexOf(speedControl);
+                if (control === controls.INC_SPEED && speedIndex < SPEEDS.length - 1) ++speedIndex;
+                else if (control === controls.DEC_SPEED && speedIndex > 0) --speedIndex;
+                else if (control === controls.MIN_SPEED) speedIndex = 0;
+                else if (control === controls.NORMAL_SPEED) speedIndex = SPEEDS.indexOf(1);
+                speedControl = SPEEDS[speedIndex];
+                self.showOSD("Speed: " + ((speedControl * 100) | 0) + "%", true);
+                videoClockUpdateSpeed();
+                break;
+            case controls.SAVE_STATE_0: case controls.SAVE_STATE_1: case controls.SAVE_STATE_2: case controls.SAVE_STATE_3: case controls.SAVE_STATE_4: case controls.SAVE_STATE_5:
+            case controls.SAVE_STATE_6: case controls.SAVE_STATE_7: case controls.SAVE_STATE_8: case controls.SAVE_STATE_9: case controls.SAVE_STATE_10: case controls.SAVE_STATE_11: case controls.SAVE_STATE_12:
+                var wasPaused = self.systemPause(true);
+                saveStateSocket.saveState(control & 0xff);  // get binary encoded slot number
+                if (!wasPaused) self.systemPause(false);
+                break;
+            case controls.SAVE_STATE_FILE:
+                wasPaused = self.systemPause(true);
+                saveStateSocket.saveStateFile();
+                if (!wasPaused) self.systemPause(false);
+                break;
+            case controls.LOAD_STATE_0: case controls.LOAD_STATE_1: case controls.LOAD_STATE_2: case controls.LOAD_STATE_3: case controls.LOAD_STATE_4: case controls.LOAD_STATE_5:
+            case controls.LOAD_STATE_6: case controls.LOAD_STATE_7: case controls.LOAD_STATE_8: case controls.LOAD_STATE_9: case controls.LOAD_STATE_10: case controls.LOAD_STATE_11: case controls.LOAD_STATE_12:
+                wasPaused = self.systemPause(true);
+                saveStateSocket.loadState(control & 0xff);  // get binary encoded slot number
+                if (!wasPaused) self.systemPause(false);
+                break;
+            case controls.VIDEO_STANDARD:
+                if (videoStandardIsAuto) setVideoStandardForced(jt.VideoStandard.NTSC);
+                else if (videoStandard == jt.VideoStandard.NTSC) setVideoStandardForced(jt.VideoStandard.PAL);
+                else setVideoStandardAuto(true);
+                showVideoStandardMessage();
+                break;
+            case controls.VSYNCH:
+                vSynchToggleMode();
+                break;
+            case controls.CARTRIDGE_FORMAT:
+                cycleCartridgeFormat();
+                break;
+            case controls.DEFAULTS:
+                setDefaults();
+                self.showOSD("Default Settings", true);
+                break;
         }
     };
 
@@ -650,14 +650,14 @@ at:mem@0x80(00), at:mem@80(01), at:mem@80(02) {
 
         this.getControlReport = function(control) {
             switch(control) {
-            case jt.ConsoleControls.VIDEO_STANDARD:
-                return { label: videoStandardIsAuto ? "Auto" : videoStandard.name, active: !videoStandardIsAuto };
-            case jt.ConsoleControls.VSYNCH:
-                return { label: vSynchMode === -1 ? "DISABL" : vSynchMode ? "ON" : "OFF", active: vSynchMode === 1 };
-            case jt.ConsoleControls.NO_COLLISIONS:
-                return { label: tia.getDebugNoCollisions() ? "ON" : "OFF", active: tia.getDebugNoCollisions() };
-            default:
-                return { label: "Unknown", active: false };
+                case jt.ConsoleControls.VIDEO_STANDARD:
+                    return { label: videoStandardIsAuto ? "Auto" : videoStandard.name, active: !videoStandardIsAuto };
+                case jt.ConsoleControls.VSYNCH:
+                    return { label: vSynchMode === -1 ? "DISABL" : vSynchMode ? "ON" : "OFF", active: vSynchMode === 1 };
+                case jt.ConsoleControls.NO_COLLISIONS:
+                    return { label: tia.getDebugNoCollisions() ? "ON" : "OFF", active: tia.getDebugNoCollisions() };
+                default:
+                    return { label: "Unknown", active: false };
             }
         };
 
