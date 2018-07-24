@@ -320,7 +320,7 @@ at:cpu@PC(f000)		{
         if(!s) { s = {'tia':null, 'ram':null, 'cpu':null}; }
         s.tia = tia.aokSaveState(s.tia);
         s.ram = ram.aokSaveState(s.ram);
-        s.cpu = cpu.saveState(s.cpu);
+        s.cpu = cpu.aokSaveState(s.cpu);
         return s;
     };
     this.aokSaveState = aokSaveState;

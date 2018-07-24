@@ -1756,6 +1756,32 @@ jt.M6502 = function() {
         return s;
     };
 
+    this.aokSaveState = function(s) {
+        if(!s) { s = {}; }
+        s.PC = PC;
+        s.A = A;
+        s.X = X;
+        s.Y = Y;
+        s.SP = SP;
+        s.N = N;
+        s.V = V;
+        s.D = D;
+        s.I = I;
+        s.Z = Z;
+        s.C = C;
+        s.T = T;
+        s.o = opcode;
+        s.R = RDY | 0;
+        s.d = data;
+        s.AD = AD;
+        s.BA = BA;
+        s.BC = BALCrossed | 0;
+        s.IA = IA;
+        s.bo = branchOffset;
+        s.boa = branchOffsetCrossAdjust;
+        return s;
+    };
+
     this.loadState = function(state) {
         PC = state.PC; A = state.A; X = state.X; Y = state.Y; SP = state.SP;
         N = state.N; V = state.V; D = state.D; I = state.I; Z = state.Z; C = state.C;

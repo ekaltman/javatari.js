@@ -123,31 +123,73 @@ jt.AOK = function(emu) {
         checks: {
             "at": function(trace, state, idx, atNode) {
                 // console.log(state);
+                var pat = atNode.value.pattern;
                 var memblk = state[atNode.value.block];
                 var off = 0;
+                var isArray = true;
+                var i, j, end;
                 if(atNode.value.offset.isNumeric) {
                     off = atNode.value.offset.actualOffset;
                 } else {
                     memblk = memblk[atNode.value.offset.actualOffset];
+                    isArray = Array.isArray(memblk);
                 }
-                var pat = atNode.value.pattern;
-                var end = memblk.length;
-                if(atNode.value.anchored) {
-                    end = off+1;
-                }
-                for(var i = off; i < end; i++) {
-                    if(bmatches(memblk[i],pat[0])) {
-                        var match = true;
-                        for(var j = i+1; j < i + pat.length; j++) {
-                            if(!bmatches(memblk[j],pat[j-i])) {
-                                match = false;
-                                break;
+                if(isArray) {                    
+                    end = memblk.length;
+                    if(atNode.value.anchored) {
+                        end = off+1;
+                    }
+                    for(i = off; i < end; i++) {
+                        if(bmatches(memblk[i],pat[0])) {
+                            var match = true;
+                            for(j = i+1; j < i + pat.length; j++) {
+                                if(!bmatches(memblk[j],pat[j-i])) {
+                                    match = false;
+                                    break;
+                                }
+                            }
+                            if(match) {
+                                return {node:atNode, offset:i};
                             }
                         }
-                        if(match) {
+                    }
+                } else {
+                    // It's either a two byte or a one byte value.
+                    // HACK: Consult actualOffset to figure it out for now
+                    if(atNode.value.offset.actualOffset == "PC") {
+                        if(pat.length > 2) {
+                            throw "Pattern too long for register";
+                        }
+                        if(pat.length == 2) {
+                            var matches = true;
+                            if(!bmatches((memblk & 0xFF00) >> 8, pat[0])) {
+                                matches = false;
+                            }
+                            if(matches &&
+                               pat.length == 2 &&
+                               !bmatches((memblk & 0x00FF), pat[1])) {
+                                matches = false;
+                            }
+                            if(matches) {
+                                return {node:atNode, offset:0};
+                            }
+                        } else {
+                            if(bmatches((memblk & 0xFF00) >> 8, pat[0])) {
+                                return {node:atNode, offset:0};
+                            }
+                            if(bmatches((memblk & 0x00FF), pat[0])) {
+                                return {node:atNode, offset:1};
+                            }
+                        }
+                    } else {
+                        if(pat.length > 1) {
+                            throw "Pattern too long for register";
+                        }
+                        if(bmatches(memblk,pat[0])) {
                             return {node:atNode, offset:i};
                         }
                     }
+                    return false;
                 }
                 //TODO: don't use constant strings, use regex on bytes
                 return null;
