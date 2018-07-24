@@ -130,9 +130,9 @@ jt.AOK = function(emu) {
                 } else {
                     memblk = memblk[atNode.value.offset.actualOffset];
                 }
-                var pat = atNode.pattern;
+                var pat = atNode.value.pattern;
                 var end = memblk.length;
-                if(atNode.isAnchored) {
+                if(atNode.value.anchored) {
                     end = off+1;
                 }
                 for(var i = off; i < end; i++) {
@@ -153,7 +153,7 @@ jt.AOK = function(emu) {
                 return null;
             }
         }
-        };
+    };
 
     function emptyState() {
         return {'tia':null, 'ram':null, 'cpu':null};
