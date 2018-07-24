@@ -59,8 +59,19 @@ aok.newfile(`
 // console warning.
 
 at:cpu@PC(f000)		{
-				frame
+				//frame
 				log "Start address reached!"
+			}
+
+// f824 is jump code in Pitfall!
+at:cpu@PC(f824)		{
+				log "JUMP!"
+				begin otherjump
+			}
+
+<otherjump> at:cpu@PC(f824)		{
+				log "JUMP AGAIN!"
+				begin ""
 			}
 
 // Simplest case: pattern + single action.
