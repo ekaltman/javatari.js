@@ -256,9 +256,13 @@ jt.AOK = function(emu) {
 
     // common matching code for instrs and frames
     this.domatch = function(state) {
-	// walk through entirety of spalist to update playspec state
-	// even if the matches aren't used (XXX needed?)
-	var ps;
+	// Walk through entirety of spalist to update playspec state
+	// even if the matches aren't used, and keep at any matched
+	// ones until all their match results are consumed.  Keep
+	// track of which ones matched in the parallel list matchlist;
+	// currently only noting that *a* match has occurred.
+	//
+	var ps, matchlist = [];
         self.currentState = state;
 	for (var i = 0; i < lstate.spalist.length; i++) {
 		ps = lstate.spalist[i][1];
@@ -267,18 +271,39 @@ jt.AOK = function(emu) {
 			ps.state.trace.consumed = false;
 		}
 		ps = ( lstate.spalist[i][1] = ps.next() );
+		if (ps.match) {
+			matchlist.push(true);
+			// eat up any subsequent matches
+			//while (ps.match) {
+			//	ps = ( lstate.spalist[i][1] = ps.next() );
+			//}
+		} else {
+			matchlist.push(false);
+		}
 		ps.state.trace.consumed = true;
 	}
+        self.copyIsCurrent = false;
 
-	// process any found matches, obeying language semantics re: continue
-	// XXX continue nyi
+	// Playspecs stuff is done, now process any found matches, obeying
+	// language semantics re: states and continue.
+	//
 	for (var i = 0; i < lstate.spalist.length; i++) {
-		ps = lstate.spalist[i][1];
-		if (ps.match) {
-			console.log("match on spalist index " + i);
+		if (lstate.curstate != lstate.spalist[i][0]) {
+			// pattern qualified by state we aren't in right now
+			continue;
+		}
+		if (matchlist[i] == true) {
+			lstate.continue = false;
+
+			// do all the things
+			runcmds(lstate.spalist[i][2]);
+
+			if (lstate.continue == false) {
+				// stop after 1st match unless "continue" used
+				break;
+			}
 		}
 	}
-        self.copyIsCurrent = false;
     }
 
     // hook called at instruction dispatch point
