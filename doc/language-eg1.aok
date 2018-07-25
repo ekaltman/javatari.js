@@ -1,0 +1,62 @@
+// Language based on [f]lex,
+// a list of pattern/action pairs, basically.
+// Actions are white-space separated command + arguments, like shell commands.
+
+// Actions (initial values in parens):
+//	throttle n		-- throttle speed of emulator, n=1-100 (100)
+//	frame			-- match on frame (default=instr)
+//	instr			-- match per-instruction (default)
+//	highlight XY		-- highlight XY in status display
+//	normal XY		-- unhighlight XY in status display
+//	log arg			-- log message to JS console
+//	message arg		-- message to show in status display
+//	bubble XY arg		-- like a "speech bubble" with message tied
+//					to some XY coord in status display
+//	begin state		-- change to specified state (state ""
+//					refers to patterns w/o explicit states)
+//	continue		-- keep trying additional patterns, else
+//					only first pattern matched applies;
+//					order in spec file is significant
+//	eval arg		-- eval JavaScript expression
+
+// May also want modal-message and modal-bubble?
+
+// Args for log/message/bubble can have $value (e.g., $cpu@A) to incorporate
+// an emulator value in the message.  (XXX Not yet implemented.)
+
+// Note that "XY" coords go with spreadsheet-like interface for status
+// display.  Since the .aok files and status display specs are separate,
+// they can be (legitimately) paired differently.  Long term, that would
+// bugger up the XY coord, or at least tie the two spec files together.
+// Should eventually switch to (option of) labels in .aok spec in place
+// of XY that could be specified in display spec in place where it makes
+// the best sense, or if the label is undefined then we'd just log a JS
+// console warning.
+
+// Simplest case: pattern + single action.
+at:cpu@PC(f000)		log "Start address reached!"
+
+// f824 is jump code in Pitfall! -- illustrates state usage in the language.
+at:cpu@PC(f824)		{
+		log "JUMP!"
+		begin otherjump
+	}
+
+<otherjump> at:cpu@PC(f824)	{
+		log "JUMP AGAIN!"
+		// "" returns to the set of unqualified patterns
+		begin ""
+	}
+
+// Special case: actions run initially.  Placement in file doesn't matter.
+<START>		{
+			// If the "frame" is uncommented, then at:cpu@PC(f824)
+			// won't match, because that machine state won't be
+			// seen at frame boundaries.
+			//frame
+			log "Example 1"
+		}
+
+// On state names: could require them to be declared to catch user typos.
+// (Although the language processor does basic checking on those names,
+// so this probably isn't necessary.)

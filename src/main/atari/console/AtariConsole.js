@@ -26,38 +26,6 @@ jt.AtariConsole = function(mainVideoClock) {
 // XXX feed in a static string for now to test - would normally load this
 //	via XMLHttpRequest, but for now, it's template literals ftw
 aok.newfile(`
-// Language based on [f]lex,
-// a list of pattern/action pairs, basically.
-// Actions are white-space separated command + arguments, like shell commands.
-
-// Actions (initial values in parens):
-//	throttle n		-- throttle speed of emulator, n=1-100 (100)
-//	match frame|instr	-- match on frame or per-instruction (instr)
-//	highlight XY		-- highlight XY in status display
-//	normal XY		-- unhighlight XY in status display
-//	log arg1...		-- log message to JS console
-//	message arg1...		-- message to show in status display
-//	bubble XY arg1...	-- like a "speech bubble" with message tied
-//					to some XY coord in status display
-//	begin state		-- change to specified state
-//	continue		-- keep trying additional patterns, else
-//					only first pattern matched applies;
-//					order in spec file is significant
-
-// May also want modal-message and model-bubble?
-
-// Args for log/message/bubble can have $value (e.g., $cpu@A) to incorporate
-// an emulator value in the message.
-
-// Note that "XY" coords go with spreadsheet-like interface for status
-// display.  Since the .aok files and status display specs are separate,
-// they can be (legitimately) paired differently.  Long term, that would
-// bugger up the XY coord, or at least tie the two spec files together.
-// Should eventually switch to (option of) labels in .aok spec in place
-// of XY that could be specified in display spec in place where it makes
-// the best sense, or if the label is undefined then we'd just log a JS
-// console warning.
-
 at:cpu@PC(f000)		{
 				//frame
 				log "Start address reached!"
@@ -74,28 +42,12 @@ at:cpu@PC(f824)		{
 				begin ""
 			}
 
-// Simplest case: pattern + single action.
-//at:cpu@A(u128)		throttle 50
-
-// Pattern + multiple actions.
-//at:mem@0x80(00), at:mem@80(01), at:mem@80(02)	{
-//		highlight K7
-//		log "Ah, memories..."
-//		begin foo
-//		begin ""
-//	}
-
-// Pattern that only applies in state foo (states are exclusive).
-//<foo> at:mem@0x20(AF029F)	bubble F15 "Hello, world!"
-
 // Special case: actions run initially.  Placement in file doesn't matter.
 <START>		{
 			//frame
 			log Hello
 			log "  World!"
 		}
-
-// On state names: could require them to be declared to catch user typos.
 `);
 // JDA end
     };
