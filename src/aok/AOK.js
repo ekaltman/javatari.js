@@ -94,7 +94,7 @@ jt.AOK = function(emu) {
                 return {index: -1, consumed:true};
             },
             isReady: function(trace) {
-                return trace.index > -1;
+                return trace.index > -1 && !trace.consumed;
             },
             currentState: function (trace) {
                 return self.currentState;
@@ -268,19 +268,20 @@ jt.AOK = function(emu) {
 		ps = lstate.spalist[i][1];
 		if (ps.state.trace.index == -1) {
 			ps.state.trace.index = 0;
-			ps.state.trace.consumed = false;
 		}
-		ps = ( lstate.spalist[i][1] = ps.next() );
+			ps.state.trace.consumed = false;
+		  ps = ( lstate.spalist[i][1] = ps.next() );
+      assert(ps.state.trace.consumed == true);
+      ps.state.trace.consumed = true;
 		if (ps.match) {
 			matchlist.push(true);
 			// eat up any subsequent matches
-			//while (ps.match) {
-			//	ps = ( lstate.spalist[i][1] = ps.next() );
-			//}
+			while (ps.match) {
+				ps = ( lstate.spalist[i][1] = ps.next() );
+			}
 		} else {
 			matchlist.push(false);
 		}
-		ps.state.trace.consumed = true;
 	}
         self.copyIsCurrent = false;
 
