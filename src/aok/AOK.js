@@ -87,6 +87,39 @@ jt.AOK = function(emu) {
                     };
                 },
                 startParse: Playspecs.parseValue
+            },
+            {
+                type:"changed",
+                match: /^changed:([a-zA-Z_0-9]+)(@[0-9A-z_]+)/,
+                // Examples:
+                // changed:mem@0x20
+                // changed:cpu@A
+                // changed:mem@0x80, changed:mem@80 & at:mem@80(02)
+                value: function(matchResult) {
+                    var memBlock = matchResult[1];
+                    var offset = null;
+                    if(matchResult[2]) {
+                        var offsetStr = matchResult[2].substr(1);
+                        var isNumeric = false;
+                        var actualOffset = offsetStr;
+                        if(offsetStr.match(/^0x([0-9a-fA-F_]+)$/)) {
+                            isNumeric = true;
+                            actualOffset = parseInt(offsetStr.substr(2).replace("_",""), 16);
+                        } else if(offsetStr.match(/^[0-9]+$/)) {
+                            isNumeric = true;
+                            actualOffset = parseInt(offsetStr, 10);
+                        }
+                        offset = {
+                            numeric: isNumeric,
+                            actualOffset: actualOffset
+                        };
+                    }
+                    return {
+                        block:memBlock,
+                        offset:offset
+                    };
+                },
+                startParse: Playspecs.parseValue
             }
         ],
         trace: {
@@ -193,16 +226,48 @@ jt.AOK = function(emu) {
                 }
                 //TODO: don't use constant strings, use regex on bytes
                 return null;
+            },
+            "changed": function(trace, state, idx, atNode) {
+                if(idx <= 0) {
+                    return null;
+                }
+                // console.log(state);
+                var memblk = state[atNode.value.block];
+                var lastblk = self.lastState[atNode.value.block];
+                var off = 0;
+                var oldDatum, newDatum;
+                if(atNode.value.offset.isNumeric) {
+                    off = atNode.value.offset.actualOffset;
+                    oldDatum = memblk[off];
+                    newDatum = lastblk[off];
+                } else {
+                    oldDatum = memblk[atNode.value.offset.actualOffset];
+                    newDatum = lastblk[atNode.value.offset.actualOffset];
+                }
+                if(oldDatum != newDatum) {
+                    return {node:atNode};
+                }
+                return null;
             }
         }
+        
     };
 
     function emptyState() {
         return {'tia':null, 'ram':null, 'cpu':null};
     }
+
+    function flipState() {
+        var temp = self.lastState;
+        self.lastState = self.currentState;
+        self.currentState = temp;
+        Javatari.room.console.aokSaveState(self.currentState);
+    }
+    this.flipState = flipState;
     
     function init(self) {
         self.checked_specs = [];
+        self.lastState = emptyState();
         self.currentState = emptyState();
         self.currentCopy = emptyState();
         self.copyIsCurrent = false;
@@ -263,7 +328,6 @@ jt.AOK = function(emu) {
 	// currently only noting that *a* match has occurred.
 	//
 	var ps, matchlist = [];
-        self.currentState = state;
 	for (var i = 0; i < lstate.spalist.length; i++) {
 		ps = lstate.spalist[i][1];
 		if (ps.state.trace.index == -1) {
@@ -474,7 +538,8 @@ jt.AOK = function(emu) {
 	// Scanner returns lexemes whose token type can be distinguished
 	// based on the first character:
 	//	a	at:...
-	//	,	,
+  //	c	changed:...
+  //	,	,
 	//	&	&
 	//	<	<state>
 	//	{	{
@@ -537,6 +602,12 @@ jt.AOK = function(emu) {
 			}
 			// (single) at:... expressions
 			re = /^at:\w+(@\w+)?\((!?)([^)]+)\)/g;
+			if ((m = re.exec(s)) !== null) {
+				s = s.slice(re.lastIndex);
+				return m[0];
+			}
+			// (single) changed:... expressions
+			re = /^changed:\w+(@\w+)/g;
 			if ((m = re.exec(s)) !== null) {
 				s = s.slice(re.lastIndex);
 				return m[0];
@@ -657,14 +728,18 @@ jt.AOK = function(emu) {
 
 	var atexpr = function() {
 		var t, expr = '';
-		if ((t = lex())[0] != 'a') {
-			throw 'expected "at" expression';
+    t = lex();
+		if (t[0] != 'a' && t[0] != 'c') {
+			throw 'expected playspec';
 		}
 		expr = t;
+    // TODO: this should handle |, ..., and other aspects of playspecs too.
+    // The playspecs parser can be extended to just parse a playspec from a string and give you back the remainder, which may be helpful?  In fact it might work this way already, since it tries to parse just one expression from the given string.  If it doesn't already work this way, or if you need for example the length of the part of the spec it parsed, we can modify playspec.ts and parser.ts to make it possible.  Or you could just guard the whole spec with () or something.
 		while (peek() == ',' || peek() == '&') {
 			expr += lex();
-			if ((t = lex())[0] != 'a') {
-				throw 'expected more "at" expressions';
+      t = lex();  
+			if (t[0] != 'a' && t[0] != 'c') {
+				throw 'expected more playspec expressions';
 			}
 			expr += t;
 		}
@@ -706,6 +781,7 @@ jt.AOK = function(emu) {
 			}
 			// falls through
 		    case 'a':
+		    case 'c':
 			var expr = atexpr();
 			var actions = action();
 			var ps = makePS(expr);

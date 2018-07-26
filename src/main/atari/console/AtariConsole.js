@@ -126,7 +126,7 @@ at:cpu@PC(f824)		{
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
 	      // JDA
-	      aok.frame(aokSaveState(aok.currentState));
+	      aok.frame(aok_getState(aok.currentState));
 	      // JDA end
         tia.frame();
     }
@@ -355,7 +355,8 @@ at:cpu@PC(f824)		{
         bus = new jt.Bus(cpu, tia, pia, ram);
 	      // JDA
 	      aok = new jt.AOK(this);
-	      cpu.connectAOK(aok, aokSaveState);
+        aok_getState = aok.flipState;
+	      cpu.connectAOK(aok, aok_getState);
 	      // JDA end
     };
 
@@ -386,6 +387,7 @@ at:cpu@PC(f824)		{
     var bus;
     // JDA
     var aok;
+    var aok_getState;
     // JDA end
 
     var videoStandard;
