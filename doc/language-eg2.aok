@@ -1,0 +1,8 @@
+// this should log a message on screen-to-screen transitions in Pitfall!
+
+<START>		{
+			frame
+			log "LET THE HUNGER GAMES BEGIN"
+		}
+
+changed:mem@0x81	log "PRNG value changed"

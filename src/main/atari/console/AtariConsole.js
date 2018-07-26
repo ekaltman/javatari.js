@@ -26,28 +26,14 @@ jt.AtariConsole = function(mainVideoClock) {
 // XXX feed in a static string for now to test - would normally load this
 //	via XMLHttpRequest, but for now, it's template literals ftw
 aok.newfile(`
-at:cpu@PC(f000)		{
-				//frame
-				log "Start address reached!"
-			}
 
-// f824 is jump code in Pitfall!
-at:cpu@PC(f824)		{
-				log "JUMP!"
-				begin otherjump
-			}
-
-<otherjump> at:cpu@PC(f824)		{
-				log "JUMP AGAIN!"
-				begin ""
-			}
-
-// Special case: actions run initially.  Placement in file doesn't matter.
 <START>		{
-			//frame
-			log Hello
-			log "  World!"
+			frame
+			log "LET THE HUNGER GAMES BEGIN"
 		}
+
+changed:mem@0x81	log "PRNG value changed"
+
 `);
 // JDA end
     };

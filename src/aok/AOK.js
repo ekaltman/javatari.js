@@ -392,42 +392,6 @@ jt.AOK = function(emu) {
         self.copyState = emptyState();
     }
 
-    // Call this to make this instance of AOK start matching the given traces.
-    // TODO AOK: You probably want to call it before the emulator starts!
-    this.__UNUSED__startMatching = function(playspec_strings) {
-        //atomic formula syntax for "scan through memory region for pattern":
-        //at:MEM@OFF(ANCHOR PAT+)
-        //Where:
-        //  MEM: tia | cpu | mem
-        //  OFF (optional): register_name | 0xOffset [beginning of search]
-        //  ANCHOR (optional): !, force match to be exactly at MEM+OFF.
-        //  PAT: HEXPAIR | UNSIGNED | MASK | SET
-        //    HEXPAIR: two hex digits
-        //    UNSIGNED: unsigned decimal value prefixed with 'u'
-        //    MASK: 'm' followed by 8 characters from the set {0,1,-}.  0 means "the byte being matched must be 0 here", 1 means it must be 1, and - means "don't care".  ex: m0010---- to check some high bits.
-        //    SET: [ PAT+ ] to check the disjunction of several patterns
-        //    Whitespace and underscores are ignored.
-        //the check results will tell you where the pattern was matched, which is better than nothing!
-        //for the full playspecs syntax please see the AIIDE paper or the playspecs doc/ folder.
-        self.currentState = emptyState();
-        self.copyIsCurrent = false;
-        self.copyState = emptyState();
-        self.matches = [];
-        self.checks = [];
-        for(var i = 0; i < playspec_strings.length; i++) {
-            self.checks.push((new Playspecs.Playspec(playspec_strings[i], memoryAnalysisContext)).match(null, "explicit"));
-            self.matches.push([]);
-        }
-    };
-
-    // Implement this however you like to handle matches.
-    // Probably best to not use a "matches" list like this,
-    // just flag them however you want.  This is just for illustration.
-    this.__UNUSED__processMatch = function(idx, checkResult) {
-        this.matches[idx].push(checkResult.match);
-    };
-
-    
     // language state
     var lstate = {
 	throttle:	null,	// emu speed XXX to do
@@ -537,9 +501,8 @@ jt.AOK = function(emu) {
 
 	// Scanner returns lexemes whose token type can be distinguished
 	// based on the first character:
-	//	a	at:...
-  //	c	changed:...
-  //	,	,
+	//	(	at:..., changed:..., or parenthesized playspec
+	//	,	,
 	//	&	&
 	//	<	<state>
 	//	{	{
@@ -604,13 +567,13 @@ jt.AOK = function(emu) {
 			re = /^at:\w+(@\w+)?\((!?)([^)]+)\)/g;
 			if ((m = re.exec(s)) !== null) {
 				s = s.slice(re.lastIndex);
-				return m[0];
+				return '(' + m[0] + ')';
 			}
 			// (single) changed:... expressions
 			re = /^changed:\w+(@\w+)/g;
 			if ((m = re.exec(s)) !== null) {
 				s = s.slice(re.lastIndex);
-				return m[0];
+				return '(' + m[0] + ')';
 			}
 			// unquoted word
 			re = /^\w+/g;
@@ -635,11 +598,11 @@ jt.AOK = function(emu) {
 	// start ::= { globalstmt } EOF
 	// globalstmt ::= '\n'
 	// globalstmt ::= STATE action
-	// globalstmt ::= [ STATE ] atexpr action
+	// globalstmt ::= [ STATE ] psexpr action
 	// action ::= stmt
 	// action ::= '{' { stmt } '}'
 	// stmt ::= { WORD } '\n'
-	// atexpr ::= AT { ( ',' | '&' ) AT }
+	// psexpr ::= PLAYSPEC
 	//
 	var checkargs = function(cmd, args) {
 		var i, re, cargs = ctab[cmd][0];
@@ -726,24 +689,11 @@ jt.AOK = function(emu) {
 		}
 	}
 
-	var atexpr = function() {
-		var t, expr = '';
-    t = lex();
-		if (t[0] != 'a' && t[0] != 'c') {
-			throw 'expected playspec';
+	var psexpr = function() {
+		if (peek()[0] != '(') {
+			throw 'expected playspec expression';
 		}
-		expr = t;
-    // TODO: this should handle |, ..., and other aspects of playspecs too.
-    // The playspecs parser can be extended to just parse a playspec from a string and give you back the remainder, which may be helpful?  In fact it might work this way already, since it tries to parse just one expression from the given string.  If it doesn't already work this way, or if you need for example the length of the part of the spec it parsed, we can modify playspec.ts and parser.ts to make it possible.  Or you could just guard the whole spec with () or something.
-		while (peek() == ',' || peek() == '&') {
-			expr += lex();
-      t = lex();  
-			if (t[0] != 'a' && t[0] != 'c') {
-				throw 'expected more playspec expressions';
-			}
-			expr += t;
-		}
-		return expr;
+		return lex();
 	}
 
 	var makePS = function(expr) {
@@ -754,7 +704,10 @@ jt.AOK = function(emu) {
 		//	re-formatted as a string, and thrown anew, but the
 		//	info's too useful for debugging right now.
 		//
-		var p = new Playspecs.Playspec(expr, memoryAnalysisContext);
+		var p;
+		expr = expr.slice(1, -1);	// remove outer parens
+console.log(expr);
+		p = new Playspecs.Playspec(expr, memoryAnalysisContext);
 		return p.match(null, "explicit");
 	}
 
@@ -769,7 +722,7 @@ jt.AOK = function(emu) {
 			lstate.seenused[s] = true;
 
 			lex();
-			if (peek()[0] != 'a') {
+			if (peek()[0] != '(') {
 				if (s != 'START') {
 					throw "can only omit at-expr for START";
 				}
@@ -780,9 +733,8 @@ jt.AOK = function(emu) {
 				break;
 			}
 			// falls through
-		    case 'a':
-		    case 'c':
-			var expr = atexpr();
+		    case '(':
+			var expr = psexpr();
 			var actions = action();
 			var ps = makePS(expr);
 			lstate.spalist.push([ s, ps, actions ])
