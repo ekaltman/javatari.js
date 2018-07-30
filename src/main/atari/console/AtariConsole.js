@@ -32,7 +32,7 @@ aok.newfile(`
 			log "LET THE HUNGER GAMES BEGIN"
 		}
 
-changed:mem@0x81	log "PRNG value changed"
+changed:ram@0x81	log "PRNG value changed"
 
 `);
 // JDA end

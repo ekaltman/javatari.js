@@ -17,13 +17,13 @@ jt.AOK = function(emu) {
                 type:"at",
                 match: /^at:([a-zA-Z_0-9]+)(@[0-9A-z_]+)?\((!?)([^)]+)\)/,
                 // Examples:
-                // at:mem@0x20(AF029F)
+                // at:ram@0x20(AF029F)
                 // at:cpu@A(u128)
-                // at:mem(s-12 DED8 m0--10--- [m1000---- m0---100- FF u35])
-                // at:mem(.* (DED8) .*) (not allowed yet)
-                // at:mem+0x80(00), at:mem+80(01), at:mem+80(02)
-                // (at:mem+0x80(00) & at:mem+FF(u10)), ..., at:mem+80(FF))
-                // TODO: allow for anchoring exactly at an offset.
+                // at:ram(s-12 DED8 m0--10--- [m1000---- m0---100- FF u35])
+                // at:ram(.* (DED8) .*) (not allowed yet)
+                // at:ram@0x80!(00), at:ram@0x80!(01), at:ram@0x80!(02)
+                // (at:ram@0x80!(00) & at:ram@0xFF!(u10)), ..., at:ram@0x80!(FF))
+                // Anchor exactly at an offset with !
                 value: function(matchResult) {
                     var memBlock = matchResult[1];
                     var offset = null;
@@ -92,9 +92,9 @@ jt.AOK = function(emu) {
                 type:"changed",
                 match: /^changed:([a-zA-Z_0-9]+)(@[0-9A-z_]+)/,
                 // Examples:
-                // changed:mem@0x20
+                // changed:ram@0x20
                 // changed:cpu@A
-                // changed:mem@0x80, changed:mem@80 & at:mem@80(02)
+                // changed:ram@0x80, changed:ram@80 & at:ram@80!(02)
                 value: function(matchResult) {
                     var memBlock = matchResult[1];
                     var offset = null;
@@ -228,7 +228,7 @@ jt.AOK = function(emu) {
                 return null;
             },
             "changed": function(trace, state, idx, atNode) {
-                if(idx <= 0) {
+                if(idx <= 1) {
                     return null;
                 }
                 // console.log(state);
