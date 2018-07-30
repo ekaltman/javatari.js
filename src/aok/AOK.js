@@ -244,11 +244,11 @@ jt.AOK = function(emu) {
                     if(atNode.value.block == 'ram') {
                         off -= 0x80;
                     }
-                    oldDatum = memblk[off];
-                    newDatum = lastblk[off];
+                    newDatum = memblk[off];
+                    oldDatum = lastblk[off];
                 } else {
-                    oldDatum = memblk[atNode.value.offset.actualOffset];
-                    newDatum = lastblk[atNode.value.offset.actualOffset];
+                    newDatum = memblk[atNode.value.offset.actualOffset];
+                    oldDatum = lastblk[atNode.value.offset.actualOffset];
                 }
                 if(oldDatum != newDatum) {
                     return {node:atNode};

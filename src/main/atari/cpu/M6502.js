@@ -106,7 +106,7 @@ jt.M6502 = function() {
 
     var fetchOpcodeAndDecodeInstruction = function() {
 	      // JDA
-	      aok.instructionDispatch(aok_getState(aok.currentState));
+	      // aok.instructionDispatch(aok_getState(aok.currentState));
 	      // JDA end
         opcode = bus.read(PC);
         instruction = instructions[opcode];
