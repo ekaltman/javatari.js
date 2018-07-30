@@ -161,13 +161,16 @@ jt.AOK = function(emu) {
                 var off = 0;
                 var isArray = true;
                 var i, j, end;
-                if(atNode.value.offset.isNumeric) {
+                if(atNode.value.offset.numeric) {
                     off = atNode.value.offset.actualOffset;
+                    if(atNode.value.block == 'ram') {
+                        off -= 0x80;
+                    }
                 } else {
                     memblk = memblk[atNode.value.offset.actualOffset];
                     isArray = Array.isArray(memblk);
                 }
-                if(isArray) {                    
+                if(isArray) {
                     end = memblk.length;
                     if(atNode.value.anchored) {
                         end = off+1;
@@ -236,8 +239,11 @@ jt.AOK = function(emu) {
                 var lastblk = self.lastState[atNode.value.block];
                 var off = 0;
                 var oldDatum, newDatum;
-                if(atNode.value.offset.isNumeric) {
+                if(atNode.value.offset.numeric) {
                     off = atNode.value.offset.actualOffset;
+                    if(atNode.value.block == 'ram') {
+                        off -= 0x80;
+                    }
                     oldDatum = memblk[off];
                     newDatum = lastblk[off];
                 } else {
