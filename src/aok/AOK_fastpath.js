@@ -28,20 +28,5 @@ function aokfp_getfunc(expr) {
 
 	// did at:cpu as a PoC, but obviously this could support more...
 
-//	if (expr == 'at:cpu@PC(f000)') {
-//		aokfp_cpu.AOKevalhack('this.AOKgetPC = function() { return PC; }');
-//		return function() {
-//				return aokfp_cpu.AOKgetPC() == 0xf000;
-//			};
-//	}
-//
-//	if (expr == 'at:cpu@PC(f824)') {
-//		aokfp_cpu.AOKevalhack('this.AOKchkf824 = function() { return PC == 0xf824; }');
-//		return aokfp_cpu.AOKchkf824;
-//
-//		return function() {
-//				return aokfp_cpu.AOKgetPC() == 0xf824;
-//			};
-//	}
 	return null;
 }
