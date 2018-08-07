@@ -1,5 +1,14 @@
 // following structure of existing Javatari JS code
 
+// global flags to control hook invocation - these allow hooking's
+// state-saving side effects to be shut off at the source
+// these could doubtless be stuffed in instances of AOK, but
+// frankly this works, we'll only ever have one instance, and
+// life's too short to waste fighting with js namespaces
+//
+var aok_dohook_frame = false;
+var aok_dohook_instr = true;
+
 jt.AOK = function(emu) {
     "use strict";
     var self;
@@ -336,13 +345,21 @@ jt.AOK = function(emu) {
 	var ps, matchlist = [];
 	for (var i = 0; i < lstate.spalist.length; i++) {
 		ps = lstate.spalist[i][1];
+
+		// check for fastpath...
+		if (typeof ps === 'function') {
+			matchlist.push(ps());
+			continue;
+		}
+
+		// ...otherwise fall back on full playspec engine
 		if (ps.state.trace.index == -1) {
 			ps.state.trace.index = 0;
 		}
-			ps.state.trace.consumed = false;
-		  ps = ( lstate.spalist[i][1] = ps.next() );
-      assert(ps.state.trace.consumed == true);
-      ps.state.trace.consumed = true;
+		ps.state.trace.consumed = false;
+		ps = ( lstate.spalist[i][1] = ps.next() );
+		assert(ps.state.trace.consumed == true);
+		ps.state.trace.consumed = true;
 		if (ps.match) {
 			matchlist.push(true);
 			// eat up any subsequent matches
@@ -408,9 +425,9 @@ jt.AOK = function(emu) {
 	seenused:	null,	// state names seen (statically) used in spec
 	continue:	null,	// tmp flag for communicating back to processing
 	spalist:	null,	// state-pattern-action (ordered) list
+	fastpath:	null,	// true if *all* exprs use fast path
     }
 
-    //function resetlangstate() {
     this.resetlangstate = function() {
 	lstate.throttle = 100;
 	lstate.frame_on = false;
@@ -420,16 +437,29 @@ jt.AOK = function(emu) {
 	lstate.seenused = {};
 	lstate.continue = false;
 	lstate.spalist = [];
+	// reset hooking state
+	aok_dohook_instr = true;
+	aok_dohook_frame = false;
 	// and clear playspec state
 	this.initMatching();
+	// and fastpath
+	aokfp_resetcounter();
     }
 
     // command implementations - add new ones to ctab too
     function c_frame() {
     	lstate.frame_on = true;
+	if (!lstate.fastpath) {
+		aok_dohook_instr = false;
+		aok_dohook_frame = true;
+	}
     }
     function c_instr() {
     	lstate.frame_on = false;
+	if (!lstate.fastpath) {
+		aok_dohook_instr = true;
+		aok_dohook_frame = false;
+	}
     }
     function c_throttle(n) {
 	if (n < 1) {			// quietly clamp value
@@ -710,9 +740,15 @@ jt.AOK = function(emu) {
 		//	re-formatted as a string, and thrown anew, but the
 		//	info's too useful for debugging right now.
 		//
-		var p;
 		expr = expr.slice(1, -1);	// remove outer parens
-console.log(expr);
+
+		// I can haz fastpath?
+		var func = aokfp_getfunc(expr);
+		if (func !== null) {
+			return func;
+		}
+		// Nope
+		var p;
 		p = new Playspecs.Playspec(expr, memoryAnalysisContext);
 		return p.match(null, "explicit");
 	}
@@ -786,6 +822,20 @@ console.log(expr);
 		if (!(name in lstate.referenced)) {
 			console.log("Warning: no begin uses state " + name);
 		}
+	}
+
+	// nothing in spalist uses playspecs => disable expensive state saving
+	var ps;
+	lstate.fastpath = true;
+	for (var i = 0; i < lstate.spalist.length; i++) {
+		ps = lstate.spalist[i][1];
+		if (typeof ps !== 'function') {
+			lstate.fastpath &= false;
+		}
+	}
+	if (lstate.fastpath) {
+		aok_dohook_instr = aok_dohook_frame = false;
+console.log("[AOK fastpath detected]");
 	}
 
 	// run initial commands, if any

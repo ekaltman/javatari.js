@@ -26,13 +26,27 @@ jt.AtariConsole = function(mainVideoClock) {
 // XXX feed in a static string for now to test - would normally load this
 //	via XMLHttpRequest, but for now, it's template literals ftw
 aok.newfile(`
+at:cpu@PC(f000)		log "Start address reached!"
 
-<START>		{
-			frame
-			log "LET THE HUNGER GAMES BEGIN"
-		}
+// f824 is jump code in Pitfall! -- illustrates state usage in the language.
+at:cpu@PC(f824)		{
+		log "JUMP!"
+		begin otherjump
+	}
 
-changed:ram@0x81	log "PRNG value changed"
+<otherjump> at:cpu@PC(f824)	{
+		log "JUMP AGAIN!"
+		// "" returns to the set of unqualified patterns
+		begin ""
+	}
+
+
+//<START>		{
+//			frame
+//			log "LET THE HUNGER GAMES BEGIN"
+//		}
+//
+//changed:ram@0x81	log "PRNG value changed"
 
 `);
 // JDA end
@@ -111,9 +125,13 @@ changed:ram@0x81	log "PRNG value changed"
     function videoFrame() {
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
-	      // JDA
-	      aok.frame(aok_getState(aok.currentState));
-	      // JDA end
+		// JDA
+		if (aok_dohook_frame) {
+			aok.frame(aok_getState(aok.currentState));
+		} else {
+			aok.frame(null);
+		}
+		// JDA end
         tia.frame();
     }
 
@@ -343,6 +361,7 @@ changed:ram@0x81	log "PRNG value changed"
 	      aok = new jt.AOK(this);
         aok_getState = aok.flipState;
 	      cpu.connectAOK(aok, aok_getState);
+	      aokfp_cpu = cpu;
 	      // JDA end
     };
 

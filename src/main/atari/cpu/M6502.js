@@ -19,6 +19,8 @@ jt.M6502 = function() {
 	aok = xaok;
 	aok_getState = getstate;
     };
+
+    this.AOKevalhack = function(expr) { eval(expr); }
     // JDA end
 
     this.clockPulse = function() {
@@ -105,9 +107,13 @@ jt.M6502 = function() {
     // Internal operations
 
     var fetchOpcodeAndDecodeInstruction = function() {
-	      // JDA
-	      // aok.instructionDispatch(aok_getState(aok.currentState));
-	      // JDA end
+		// JDA
+		if (aok_dohook_instr) {
+			aok.instructionDispatch(aok_getState(aok.currentState));
+		} else {
+			aok.instructionDispatch(null);
+		}
+		// JDA end
         opcode = bus.read(PC);
         instruction = instructions[opcode];
         T = 0;
