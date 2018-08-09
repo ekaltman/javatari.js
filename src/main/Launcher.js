@@ -27,6 +27,16 @@ Javatari.start = function (consolePowerOn) {
     Javatari.room.powerOn();
     jt.Util.log("version " + Javatari.VERSION + " started");
 
+    if (!Javatari.aokUIElement) {
+	Javatari.aokUIElement = document.getElementById(Javatari.AOK_UI_ELEMENT_ID);
+	if (!Javatari.aokUIElement)
+	    throw new Error('Javatari cannot be started. ' +
+			    'HTML document is missing aok ui element with id "' + Javatari.AOK_UI_ELEMENT_ID + '"');
+    }
+
+    // Configure AOK UI connections
+    Javatari.aokUI = new jt.aokUI(Javatari.aokUIElement, Javatari.room.console); 
+
     // Prepare ROM Database
     jt.CartridgeDatabase.uncompress();
 

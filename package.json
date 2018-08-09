@@ -6,8 +6,10 @@
     "grunt": "",
     "grunt-contrib-clean": "",
     "grunt-contrib-concat": "",
-    "grunt-contrib-copy": "",
+    "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-uglify-es": "git://github.com/gruntjs/grunt-contrib-uglify.git#harmony"
   },
-  "dependencies": {}
+  "dependencies": {
+    "codemirror": "^5.39.2"
+  }
 }

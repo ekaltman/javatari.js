@@ -52,7 +52,8 @@ Javatari = {
     WEB_EXTENSIONS_SERVER:          "webmsx.herokuapp.com",     // Server address for NetPlay
 
     RESET:                          0,                          // if value = 1 clear all saved data on the client
-    ALLOW_URL_PARAMETERS:           true                        // Allows user to override any of these parameters via URL query parameters
+    ALLOW_URL_PARAMETERS:           true,                        // Allows user to override any of these parameters via URL query parameters
+    AOK_UI_ELEMENT_ID:              "aok-ui"
 
 };
 

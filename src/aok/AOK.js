@@ -533,7 +533,7 @@ jt.AOK = function(emu) {
 		'bubble':	[ 'cw',		c_bubble ],
 		'continue':	[ '',		c_continue ],
 		'eval':		[ 'w',		c_eval ],	// for Eric :-)
-	}
+	};
 
 	// Scanner returns lexemes whose token type can be distinguished
 	// based on the first character:
@@ -553,7 +553,7 @@ jt.AOK = function(emu) {
 			return last;
 		}
 		return last = lex();
-	}
+	};
 
 	var lex = function() {
 		var rv, m, re;
@@ -796,6 +796,7 @@ jt.AOK = function(emu) {
 	}
 
 	// parse through spec file
+	console.log(lstate);
 	this.resetlangstate();
 	try {
 		start();

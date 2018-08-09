@@ -90,6 +90,8 @@ module.exports = function (grunt) {
                     "src/main/Launcher.js",
 		    "src/playspecs-js/dist/bundle.js",
 		    "src/aok/AOK.js",
+		    "src/aok/AOK_ui.js",
+		    "src/aok/AOK_fastpath.js"
                 ],
                 dest: "temp/javatari.part.js"
             },
@@ -104,7 +106,9 @@ module.exports = function (grunt) {
                 src: [
                     "src/runtime/standalone/index.part1.html",
                     "temp/javatari.js",
-                    "src/runtime/standalone/index.part2.html"
+                    "src/runtime/standalone/index.part2.html",
+		    "src/runtime/standalone/index.part3.html",
+		    "src/runtime/standalone/index.part4.html"
                 ],
                 dest: "temp/index.html"
             }
@@ -146,7 +150,9 @@ module.exports = function (grunt) {
                     {src: "src/runtime/standalone/cache.manifest", dest: "release/stable/5.0/standalone", expand: true, flatten: true, filter: "isFile"},
                     {src: "src/runtime/standalone/manifest.webapp", dest: "release/stable/5.0/standalone", expand: true, flatten: true, filter: "isFile"},
                     {src: "src/runtime/images/files/logo-icon192.png", dest: "release/stable/5.0/standalone/images", expand: true, flatten: true, filter: "isFile"},
-                    {src: "src/runtime/images/files/logo-icon512.png", dest: "release/stable/5.0/standalone/images", expand: true, flatten: true, filter: "isFile"}
+                    {src: "src/runtime/images/files/logo-icon512.png", dest: "release/stable/5.0/standalone/images", expand: true, flatten: true, filter: "isFile"},
+                    {src: "node_modules/codemirror/lib/codemirror.js", dest: "release/stable/5.0/standalone/scripts", expand: true, flatten: true, filter: "isFile"},
+                    {src: "node_modules/codemirror/lib/codemirror.css", dest: "release/stable/5.0/standalone/styles", expand: true, flatten: true, filter: "isFile"}
                 ]
             },
             embedded: {
