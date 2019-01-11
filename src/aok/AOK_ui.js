@@ -8,25 +8,80 @@ jt.aokUI= function(uiElement, atariConsole){
     //setup ui elements
     var editorElement = document.createElement("div");
     editorElement.setAttribute("id", "ui-editor");
-    uiElement.appendChild(editorElement);
 
     var loadCodeButton = document.createElement("button");
     var loadCodeButtonTextNode = document.createTextNode("Load Editor Code");
     loadCodeButton.setAttribute("id", "ui-run-code-button");
     loadCodeButton.appendChild(loadCodeButtonTextNode);
-    uiElement.appendChild(loadCodeButton);
+
+    var standardOutput = document.createElement("div");
+    standardOutput.setAttribute("id", "ui-standard-output");
+    standardOutput.style.fontFamily = "courier";
+
+    //tab interface setup
+    //based on: https://www.w3schools.com/howto/howto_js_tabs.asp
+
+    var tabHolder = document.createElement("div");
+    var codeTab = document.createElement("div");
+    var sheetTab = document.createElement("div");
+    var visTab = document.createElement("div");
+    var codeTabButton = document.createElement("button");
+    var sheetTabButton = document.createElement("button");
+    var visTabButton = document.createElement("button");
+
+    tabHolder.style.height = "16px";
+
+    codeTab.setAttribute("id", "aok-ui-codetab");
+    sheetTab.setAttribute("id", "aok-ui-sheettab");
+    visTab.setAttribute("id", "aok-ui-vistab");
+    sheetTab.innerHTML = "Sheet Vis Goes Here";
+    visTab.innerHTML = "Mem Vis Goes Here";
+
+    codeTab.className = "aok-ui-tabcontent";
+    sheetTab.className = "aok-ui-tabcontent";
+    visTab.className = "aok-ui-tabcontent";
+
+    codeTabButton.className = "aok-ui-tablinks";
+    sheetTabButton.className = "aok-ui-tablinks";
+    visTabButton.className = "aok-ui-tablinks";
+
+    codeTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-codetab"); });
+    sheetTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-sheettab");});
+    visTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-vistab");});
+
+    codeTabButton.innerHTML = "Code";
+    sheetTabButton.innerHTML = "Sheet";
+    visTabButton.innerHTML = "Vis";
+
+    function openTab(event, tabname){
+	var i, tabcontent, tablinks;
+
+	tabcontent = document.getElementsByClassName("aok-ui-tabcontent");
+	for(i = 0; i < tabcontent.length; i++){
+	    tabcontent[i].style.display = "none";
+	}
+
+	tablinks = document.getElementsByClassName("aok-ui-tablinks");
+	for(i = 0; i < tablinks.length; i++){
+	    tablinks[i].className = tablinks[i].className.replace(" active", "");
+	}
+
+	document.getElementById(tabname).style.display = "block";
+	event.currentTarget.className += " active";
+    }
 
     // Just load the current code for now
     loadCodeButton.addEventListener("click", function(){
 	aok.newfile(editor.getValue());
     });
 
+    var hasFileSelector = false;
     // Currently setting up file loader to have only one file at a time
     if (window.File && window.FileReader && window.FileList && window.Blob){
 	var fileSelector = document.createElement("input");
+	hasFileSelector = true;
 	fileSelector.setAttribute("type", "file");
 	fileSelector.setAttribute("id", "ui-file-input");
-	uiElement.appendChild(fileSelector);
 	fileSelector.addEventListener("change", readFile, false);
 
 
@@ -47,6 +102,25 @@ jt.aokUI= function(uiElement, atariConsole){
 
     }
 
+    // Attach UI Elements
+    uiElement.appendChild(tabHolder);
+    tabHolder.appendChild(codeTabButton);
+    tabHolder.appendChild(sheetTabButton);
+    tabHolder.appendChild(visTabButton);
+
+    uiElement.appendChild(codeTab);
+    codeTab.appendChild(editorElement);
+    codeTab.appendChild(loadCodeButton);
+    codeTab.appendChild(fileSelector);
+
+    uiElement.appendChild(sheetTab);
+    uiElement.appendChild(visTab);
+
+    uiElement.appendChild(standardOutput);
+
+    //Default Code tab is selected
+
+    codeTab.style.display = "block";
 
     var editor = CodeMirror(editorElement, {
 	lineNumbers: true,
@@ -57,6 +131,9 @@ at:cpu@PC(f000)		log "Start address reached!"
 // f824 is jump code in Pitfall! -- illustrates state usage in the language.
 at:cpu@PC(f824)		{
 		log "JUMP!"
+                bubble A2 "Message at A2"
+                highlight A2
+                normal A2
 		begin otherjump
 	}
 
@@ -66,9 +143,34 @@ at:cpu@PC(f824)		{
 		begin ""
 	}
 `
-
-
     });
+
+    // UI State managment
+
+    aok.aok_event.on(aok.aok_event.AOK_MESSAGE, function(eventData){
+	standardOutput.innerHTML += "<span class='aok_message_standard_output'>" + eventData.s + "<br>";
+    });
+
+    aok.aok_event.on(aok.aok_event.AOK_LOG, function(eventData){
+	console.log("AOK_LOG Called: " + eventData.s);
+	standardOutput.innerHTML += "<span class='aok_log_standard_output'>" + eventData.s + "</span><br>";
+    });
+
+    aok.aok_event.on(aok.aok_event.AOK_BUBBLE, function(eventData){
+	var coord_message = "Bubble at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + " with message: " + eventData.s + "<br>";
+	standardOutput.innerHTML += coord_message;
+    });
+
+    aok.aok_event.on(aok.aok_event.AOK_NORMAL, function(eventData){
+	var coord_message = "Normal at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + "<br>";
+	standardOutput.innerHTML += coord_message;
+    });
+
+    aok.aok_event.on(aok.aok_event.AOK_HIGHLIGHT, function(eventData){
+	var coord_message = "Highlight at coord: " + "<span class ='aok_coord_standard_output'>" + eventData.coord +"</span>" +"<br>";
+	standardOutput.innerHTML += coord_message;
+    });
+
 
 
 

@@ -35,7 +35,7 @@ Javatari.start = function (consolePowerOn) {
     }
 
     // Configure AOK UI connections
-    Javatari.aokUI = new jt.aokUI(Javatari.aokUIElement, Javatari.room.console); 
+    Javatari.aokUI = new jt.aokUI(Javatari.aokUIElement, Javatari.room.console);
 
     // Prepare ROM Database
     jt.CartridgeDatabase.uncompress();

@@ -397,6 +397,7 @@ jt.AOK = function(emu) {
     // hook called at instruction dispatch point
     this.instructionDispatch = function(state) {
 	if (lstate.frame_on == false) {
+	    AOKEvent.fire(AOKEvent.AOK_INSTR_DISPATCH, {state: state});
 		this.domatch(state);
 	}
     };
@@ -404,6 +405,7 @@ jt.AOK = function(emu) {
     // hook called at top of frame
     this.frame = function(state) {
 	if (lstate.frame_on == true) {
+	    AOKEvent.fire(AOKEvent.AOK_FRAME_DISPATCH, {state: state});
 		this.domatch(state);
 	}
     };
@@ -473,6 +475,7 @@ jt.AOK = function(emu) {
     	lstate.curstate = name;
     }
     function c_log(s) {
+	AOKEvent.fire(AOKEvent.AOK_LOG, {s:s});
     	console.log(s);
     }
     function c_continue(s) {
@@ -484,15 +487,19 @@ jt.AOK = function(emu) {
 
     // XXX nyi
     function c_highlight(coord) {
+	AOKEvent.fire(AOKEvent.AOK_HIGHLIGHT, {coord: coord});
     	console.log("NYI: highlight " + coord);
     }
     function c_normal(coord) {
+	AOKEvent.fire(AOKEvent.AOK_NORMAL, {coord: coord});
     	console.log("NYI: normal " + coord);
     }
     function c_message(s) {
+	AOKEvent.fire(AOKEvent.AOK_MESSAGE, {s:s});
     	console.log("NYI: message " + s);
     }
     function c_bubble(coord, s) {
+	AOKEvent.fire(AOKEvent.AOK_BUBBLE, {s:s, coord: coord});
     	console.log("NYI: bubble " + coord + " " + s);
     }
 
@@ -844,6 +851,48 @@ console.log("[AOK fastpath detected]");
 		runcmds(lstate.start);
 	}
     };
+
+    //Simple events for the UI
+
+    var AOKEvent = new function(){
+	var self = this;
+
+	self.event_queues = {};
+	self.fired = [];
+
+	return {
+	    AOK_MESSAGE: "aok_message",
+	    AOK_NORMAL: "aok_normal",
+	    AOK_BUBBLE: "aok_bubble",
+	    AOK_HIGHLIGHT: "aok_highlight",
+	    AOK_LOG: "aok_log",
+	    AOK_INSTR_DISPATCH: "aok_instr_dispatch",
+	    AOK_FRAME_DISPATCH: "aok_frame_dispatch",
+	    fire: function(event, eventData){
+		var queue = self.event_queues[event];
+
+		if(typeof queue === "undefined"){
+		    return;
+		}
+
+		queue.forEach(function (callback) {
+		    callback(eventData);
+		});
+
+	    },
+
+	    on: function(event, callback){
+		if (typeof self.event_queues[event] === 'undefined'){
+		    self.event_queues[event] = [];
+		}
+
+		self.event_queues[event].push(callback);
+	    }
+	};
+    }();
+
+    this.aok_event = AOKEvent;
+
 
     return (self = init(this));
 };
