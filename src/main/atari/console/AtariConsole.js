@@ -106,6 +106,7 @@ jt.AtariConsole = function(mainVideoClock) {
 		} else {
 			aok.frame(null);
 		}
+	aok.aok_event.fire(aok.aok_event.AOK_FRAME_DISPATCH, ram.aokSaveState());
 		// JDA end
         tia.frame();
     }

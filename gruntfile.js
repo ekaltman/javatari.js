@@ -98,7 +98,8 @@ module.exports = function (grunt) {
             emuFinal: {
                 src: [
                     "src/main/Javatari.js",
-                    "temp/javatari.part.min.js"
+		    "temp/javatari.part.js"
+                    //"temp/javatari.part.min.js"
                 ],
                 dest: "temp/javatari.js"
             },
@@ -161,22 +162,47 @@ module.exports = function (grunt) {
                     {src: "temp/javatari.js", dest: "release/stable/5.0/embedded", expand: true, flatten: true, filter: "isFile"}
                 ]
             }
-        }
+        },
+	watch: {
+	    scripts: {
+		files: ["src/aok/AOK.js",
+			"src/aok/AOK_ui.js",
+			"src/runtime/index.base.html",
+			"src/runtime/index.part1.html",
+			"src/runtime/index.part2.html",
+			"src/runtime/index.part3.html",
+			"src/runtime/index.part4.html",
+			"src/main/atari/console/AtariConsole.js"
+		       ],
+		tasks: [
+		    "clean:init",
+		    "concat:emuPart",
+		//    "uglify:emuPart",
+		    "concat:emuFinal",
+		    "concat:standalone",
+		    "copy:standalone",
+		    "copy:embedded",
+		    "clean:finish"
+		]
+	    }
+	}
     });
 
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-concat");
     grunt.loadNpmTasks("grunt-contrib-uglify-es");
     grunt.loadNpmTasks("grunt-contrib-copy");
+    grunt.loadNpmTasks("grunt-contrib-watch");
     grunt.registerTask("default", [
         "clean:init",
         "concat:emuPart",
-        "uglify:emuPart",
+        //"uglify:emuPart",
         "concat:emuFinal",
         "concat:standalone",
         "copy:standalone",
         "copy:embedded",
-        "clean:finish"
+        "clean:finish",
+	"watch"
     ]);
 
 };

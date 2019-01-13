@@ -7,9 +7,11 @@
     "grunt-contrib-clean": "",
     "grunt-contrib-concat": "",
     "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify-es": "git://github.com/gruntjs/grunt-contrib-uglify.git#harmony"
+    "grunt-contrib-uglify-es": "git://github.com/gruntjs/grunt-contrib-uglify.git#harmony",
+    "grunt-contrib-watch": "^1.1.0"
   },
   "dependencies": {
-    "codemirror": "^5.39.2"
+    "codemirror": "^5.42.2",
+    "grunt-contrib-clean": "^2.0.0"
   }
 }
