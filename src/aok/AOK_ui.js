@@ -45,7 +45,6 @@ jt.aokUI= function(uiElement, atariConsole){
     codeTab.setAttribute("id", "aok-ui-codetab");
     sheetTab.setAttribute("id", "aok-ui-sheettab");
     visTab.setAttribute("id", "aok-ui-vistab");
-    sheetTab.innerHTML = "Sheet Vis Goes Here";
 
     codeTab.className = "aok-ui-tabcontent";
     sheetTab.className = "aok-ui-tabcontent";
@@ -156,6 +155,15 @@ jt.aokUI= function(uiElement, atariConsole){
 	return color + scaledValue + scaledValue + scaledValue;
     }
 
+    function grayScaleNumberMapColor(value){
+	var color = "#";
+	var scaledValue = value.toString(16);
+	if (scaledValue < 10){
+	    scaledValue = "0" + scaledValue;
+	}
+	return color + scaledValue + scaledValue + scaledValue;
+    }
+
     var i;
     for (i = 0; i < memVisGridSourceArray.length; i++){
 	memVisGridSourceArray[i] = grayScaleNumberMapColor(memVisGridSourceArray[i]);
@@ -195,6 +203,114 @@ jt.aokUI= function(uiElement, atariConsole){
     }
 
 
+    // Spreadsheet Component
+    var sheetModel = {sheetData: []};
+    var coordLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var initMaxNumberColumns = 26;
+    var initMaxNumberRows = 50;
+    var rowHeaderCellWidth = 20;
+    var columnHeaderCellHeight = 24;
+    var cellHeight = 24;
+    var cellWidth = 64;
+
+
+    var sheetHolder = document.createElement("div");
+    sheetHolder.style.position = "relative";
+    sheetHolder.style.overflow = "scroll";
+    sheetHolder.style.width = "640px";
+    sheetHolder.style.height = "360px";
+
+    function columnNumberToLetter(num){
+	return coordLetters[num];
+    }
+
+    function parseCellExpression(expression){
+	//Implement language parser here! Yikes!
+
+    }
+
+    function CellData(row, column, element){
+	var self = this;
+	self.currentExpression = "";
+	self.previousExpressions = [];
+	self.nextExpressions = [];
+	self.column = column;
+	self.row = row;
+	self.hasStyle = false;
+
+	return {
+	    setExpression: function(expression){
+		self.previousExpressions.push(self.currentExpression);
+		self.currentExpression = expression;
+		self.state = parseCellExpression(self);
+	    },
+	    getExpression: function(){
+		return self.currentExpression;
+	    },
+	    getComputedStyle: function(){
+		return self.state.style;
+	    },
+	    hasStyle: function(){
+		return self.hasStyle;
+	    },
+	    element: function(){
+		return self.element;
+	    }
+	};
+    };
+
+    // Setup spreadsheet model and element set
+
+    var sheetTableElement = document.createElement("table");
+    sheetTableElement.style.border = "1px solid";
+    sheetTableElement.style.borderCollapse = "collapse";
+    sheetTableElement.style.width = initMaxNumberColumns * cellWidth + rowHeaderCellWidth + "px";
+    sheetTableElement.style.height = initMaxNumberRows * cellHeight + columnHeaderCellHeight + "px";
+    sheetHolder.appendChild(sheetTableElement);
+    var headerRow = document.createElement("tr");
+    var topLeftCell = document.createElement("th");
+    headerRow.appendChild(topLeftCell);
+    for (var i = 0; i < initMaxNumberColumns; i++){
+	var headerData = document.createElement("th");
+	headerData.setAttribute("id", "header_col_" + i);
+	headerData.innerHTML = "" + columnNumberToLetter(i);
+	headerData.style.width = cellWidth + "px";
+	headerData.style.height = columnHeaderCellHeight + "px";
+	headerData.style.border = "1px solid";
+	headerData.style.borderCollapse = "collapse";
+	headerRow.appendChild(headerData);
+    }
+
+    sheetTableElement.appendChild(headerRow);
+
+    for (var i = 0; i < initMaxNumberRows; i++){ // adding one for header row
+	var currentRowElement = document.createElement("tr");
+	if(sheetModel.sheetData[i] === undefined){
+	    sheetModel.sheetData[i] = [];
+	}
+
+	sheetTableElement.appendChild(currentRowElement);
+
+	for (var j = 0; j < initMaxNumberColumns + 1; j++){ //adding one for header column
+	    var element = document.createElement("td");
+	    element.style.height = cellHeight + "px";
+	    element.style.border = "1px solid";
+	    element.style.borderCollapse = "collapse";
+	    if(j == 0){ // we are in header column
+		element.setAttribute("id", "header_row_" + i);
+		element.style.width = rowHeaderCellWidth + "px";
+		element.style.textAlign = "center";
+		element.innerHTML = "" + i;
+	    }else{
+		element.setAttribute("id", "cell_" + i + "_" + j);
+		element.style.width = cellWidth + "px";
+		sheetModel.sheetData[i][j] = new CellData(i, j, element);
+	    }
+	    currentRowElement.appendChild(element);
+	}
+    }
+
+
     // Attach UI Elements
     uiElement.appendChild(tabHolder);
     tabHolder.appendChild(codeTabButton);
@@ -213,6 +329,8 @@ jt.aokUI= function(uiElement, atariConsole){
     visTab.appendChild(memVisHolder);
 
     uiElement.appendChild(standardOutput);
+    sheetTab.appendChild(sheetHolder);
+
     //Default Code tab is selected
 
     codeTab.style.display = "block";
@@ -266,7 +384,6 @@ at:cpu@PC(f824)		{
 	standardOutput.innerHTML += coord_message;
     });
 
-    var consoleLimit = 0;
     aok.aok_event.on(aok.aok_event.AOK_FRAME_DISPATCH, function(eventData){
 	applyNewTextValuesMap(memVisGridElementArray, eventData);
     });
