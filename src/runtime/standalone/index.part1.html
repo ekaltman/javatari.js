@@ -9,8 +9,7 @@
         <title>Javatari</title>
         <meta name="description" content="Javatari - The online Atari 2600 emulator">
 
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="theme-color" content="#363636">
+        <meta name="mobile-web-app-capable" content="yes"> <meta name="theme-color" content="#363636">
         <link rel="manifest" href="manifest.webapp">
 
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -40,100 +39,100 @@
 	<link href="styles/codemirror.css" rel="stylesheet">
 
         <style>
-            html, body {
-                position: relative;
-                margin: 0;
-                padding: 0;
-                font: normal 16px sans-serif;
-                color: hsl(0, 0%, 10%);
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-                -webkit-touch-callout: none;
-                touch-callout: none;
-                -webkit-tap-highlight-color: transparent;
-                tap-highlight-color: transparent;
-                -webkit-text-size-adjust: none;
-                -moz-text-size-adjust: none;
-                text-size-adjust: none;
-            }
-            html {
-                height: 100%;
-                background: hsl(0, 0%, 97%);
-            }
-            body {
-                min-height: 100%;
-                background: hsl(0, 0%, 97%);
-            }
-            .container {
-                max-width: 660px;
-                margin: 0 auto;
-                padding: 0 10px;
-            }
-            @media only screen and (orientation: landscape) and (max-device-width: 767px) {
-                .container { max-width: 75%; }
-            }
-            #topbar {
-                height: 51px;
-                color: hsl(0, 0%, 95%);
-                overflow: hidden;
-                background: hsl(0, 0%, 21%);
-                box-shadow: 0 0 7px hsl(0, 0%, 20%);
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-            }
-            #logo {
-                float: left;
-                width: 182px;
-                height: 32px;
-                margin: 10px 4px 0 0;
-                background-size: 182px 32px;
-                background-repeat: no-repeat;
-            }
-            #desc span {
-                float: right;
-                margin: 23px 10px 0 0;
-                font-size: 15px;
-                line-height: 15px;
-                font-weight: 600;
-            }
-            .social {
-                display: block;
-                float: right;
-                width: 26px;
-                height: 26px;
-                margin: 13px 0 0 8px;
-                background-size: 26px 26px;
-                background-repeat: no-repeat;
-            }
-            @media only screen and (max-width: 440px) {
-                #desc { display: none; }
-            }
-            #javatari {
-                padding: 0 10px;
-		width: 640px;
-		float: left;
-            }
-            .info {
-                display: none;
-                height: 38px;
-                padding-top: 14px;
-                font-size: 18px;
-                line-height: 25px;
-                text-align: center;
-            }
-            @media only screen and (max-width: 499px) {
-                #info-thin { display: block; }
-            }
-            @media only screen and (min-width: 500px) {
-                #info-wide { display: block; }
-            }
-	    /* Added CSS for AOK DSL Editor */
-	    #ui-editor{
-	        height: auto;
-		margin-top: 20px;
-	    }
+         html, body {
+             position: relative;
+             margin: 0;
+             padding: 0;
+             font: normal 16px sans-serif;
+             color: hsl(0, 0%, 10%);
+             -webkit-user-select: none;
+             -moz-user-select: none;
+             -ms-user-select: none;
+             user-select: none;
+             -webkit-touch-callout: none;
+             touch-callout: none;
+             -webkit-tap-highlight-color: transparent;
+             tap-highlight-color: transparent;
+             -webkit-text-size-adjust: none;
+             -moz-text-size-adjust: none;
+             text-size-adjust: none;
+         }
+         html {
+             height: 100%;
+             background: hsl(0, 0%, 97%);
+         }
+         body {
+             min-height: 100%;
+             background: hsl(0, 0%, 97%);
+         }
+         .container {
+             max-width: 660px;
+             margin: 0 auto;
+             padding: 0 10px;
+         }
+         @media only screen and (orientation: landscape) and (max-device-width: 767px) {
+             .container { max-width: 75%; }
+         }
+         #topbar {
+             height: 51px;
+             color: hsl(0, 0%, 95%);
+             overflow: hidden;
+             background: hsl(0, 0%, 21%);
+             box-shadow: 0 0 7px hsl(0, 0%, 20%);
+             -webkit-font-smoothing: antialiased;
+             -moz-osx-font-smoothing: grayscale;
+         }
+         #logo {
+             float: left;
+             width: 182px;
+             height: 32px;
+             margin: 10px 4px 0 0;
+             background-size: 182px 32px;
+             background-repeat: no-repeat;
+         }
+         #desc span {
+             float: right;
+             margin: 23px 10px 0 0;
+             font-size: 15px;
+             line-height: 15px;
+             font-weight: 600;
+         }
+         .social {
+             display: block;
+             float: right;
+             width: 26px;
+             height: 26px;
+             margin: 13px 0 0 8px;
+             background-size: 26px 26px;
+             background-repeat: no-repeat;
+         }
+         @media only screen and (max-width: 440px) {
+             #desc { display: none; }
+         }
+         #javatari {
+             padding: 0 10px;
+	     width: 640px;
+	     float: left;
+         }
+         .info {
+             display: none;
+             height: 38px;
+             padding-top: 14px;
+             font-size: 18px;
+             line-height: 25px;
+             text-align: center;
+         }
+         @media only screen and (max-width: 499px) {
+             #info-thin { display: block; }
+         }
+         @media only screen and (min-width: 500px) {
+             #info-wide { display: block; }
+         }
+	 /* Added CSS for AOK DSL Editor */
+	 #ui-editor{
+	     height: auto;
+	     margin-top: 20px;
+	 }
 	 #aok-ui-codetab {
 	     height: auto;
 	 }
@@ -143,6 +142,7 @@
 	     background-color: white;
 	     overflow: scroll;
 	 }
+
 	 .CodeMirror {
 	     height: 375px;
 	 }
@@ -152,7 +152,7 @@
 	 }
 
 	 #aok-ui-sheettab {
-	     height: 375px;
+	     height: 415px;
 	     padding-top: 16px;
 	 }
 
@@ -187,6 +187,14 @@
 	 .aok-ui-tabcontent {
 	     display: none;
 	     padding: 6px 12px;
+	 }
+
+	 #aok-ui-sheet-table td:hover {
+	     background-color: #00eeff;
+	 }
+
+	 .aok-ui-sheet-table-selected-cell {
+	     background-color: #ccff00;
 	 }
 
         </style>

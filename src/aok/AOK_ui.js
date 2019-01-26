@@ -213,6 +213,13 @@ jt.aokUI= function(uiElement, atariConsole){
     var cellHeight = 24;
     var cellWidth = 64;
 
+    var sheetCellEditor = document.createElement("input");
+    sheetCellEditor.style.width = "600px";
+    sheetCellEditor.style.height = "24px";
+    sheetCellEditor.style.fontFamily = "Courier";
+    sheetCellEditor.style.fontSize = "20px";
+    sheetCellEditor.style.marginBottom = "12px";
+    sheetCellEditor.style.marginTop = "6px";
 
     var sheetHolder = document.createElement("div");
     sheetHolder.style.position = "relative";
@@ -226,10 +233,15 @@ jt.aokUI= function(uiElement, atariConsole){
 
     function parseCellExpression(expression){
 	//Implement language parser here! Yikes!
+	return {
+	    style: "",
+	    innerHTML: expression
+	};
 
     }
 
     function CellData(row, column, element){
+	const selectedCellClass = " aok-ui-sheet-table-selected-cell";
 	var self = this;
 	self.currentExpression = "";
 	self.previousExpressions = [];
@@ -237,12 +249,20 @@ jt.aokUI= function(uiElement, atariConsole){
 	self.column = column;
 	self.row = row;
 	self.hasStyle = false;
+	self.element = element;
+	self.selected = false;
 
 	return {
+	    isSelected: function(){
+		return self.selected;
+	    },
+	    column: self.column,
+	    row: self.row,
 	    setExpression: function(expression){
 		self.previousExpressions.push(self.currentExpression);
 		self.currentExpression = expression;
-		self.state = parseCellExpression(self);
+		self.state = parseCellExpression(self.currentExpression);
+		self.element.innerHTML = self.state.innerHTML;
 	    },
 	    getExpression: function(){
 		return self.currentExpression;
@@ -255,6 +275,18 @@ jt.aokUI= function(uiElement, atariConsole){
 	    },
 	    element: function(){
 		return self.element;
+	    },
+	    select: function(){
+		if(!self.selected){
+		    self.element.className += selectedCellClass;
+		    self.selected = true;
+		}
+	    },
+	    unselect: function(){
+		if(self.selected){
+		    self.element.className = self.element.className.replace(selectedCellClass, "");
+		    self.selected = false;
+		}
 	    }
 	};
     };
@@ -262,6 +294,7 @@ jt.aokUI= function(uiElement, atariConsole){
     // Setup spreadsheet model and element set
 
     var sheetTableElement = document.createElement("table");
+    sheetTableElement.setAttribute("id", "aok-ui-sheet-table");
     sheetTableElement.style.border = "1px solid";
     sheetTableElement.style.borderCollapse = "collapse";
     sheetTableElement.style.width = initMaxNumberColumns * cellWidth + rowHeaderCellWidth + "px";
@@ -272,7 +305,8 @@ jt.aokUI= function(uiElement, atariConsole){
     headerRow.appendChild(topLeftCell);
     for (var i = 0; i < initMaxNumberColumns; i++){
 	var headerData = document.createElement("th");
-	headerData.setAttribute("id", "header_col_" + i);
+	headerData.setAttribute("id", "aok-ui-sheet-table-header-col-" + i);
+	headerData.className = "aok-ui-sheet-table-col-header-cell";
 	headerData.innerHTML = "" + columnNumberToLetter(i);
 	headerData.style.width = cellWidth + "px";
 	headerData.style.height = columnHeaderCellHeight + "px";
@@ -297,16 +331,52 @@ jt.aokUI= function(uiElement, atariConsole){
 	    element.style.border = "1px solid";
 	    element.style.borderCollapse = "collapse";
 	    if(j == 0){ // we are in header column
-		element.setAttribute("id", "header_row_" + i);
+		element.setAttribute("id", "aok-ui-sheet-table-header-row-" + i);
+		element.className = "aok-ui-sheet-table-row-header-cell";
 		element.style.width = rowHeaderCellWidth + "px";
 		element.style.textAlign = "center";
 		element.innerHTML = "" + i;
 	    }else{
-		element.setAttribute("id", "cell_" + i + "_" + j);
+		element.setAttribute("id", "cell-" + i + "-" + j);
+		element.className = "aok-ui-sheet-table-cell";
 		element.style.width = cellWidth + "px";
+		element.onclick = function(e){ selectCellElement(e)};
+		element.ondblclick = function(e){ editCellElement(e)};
 		sheetModel.sheetData[i][j] = new CellData(i, j, element);
 	    }
 	    currentRowElement.appendChild(element);
+	}
+    }
+
+    // Just store the current cell editing event in local variable
+    var sheetEditorCurrentEventListener;
+
+    function getCellDataFromElement(cellElement, sheetModel){
+	var splitId = cellElement.id.split("-");
+	var row = splitId[1];
+	var col = splitId[2];
+	return sheetModel[row][col];
+    }
+
+    function editCellElement(event){
+	var cellData = getCellDataFromElement(event.currentTarget, sheetModel.sheetData);
+	sheetCellEditor.value = cellData.getExpression();
+	sheetEditorCurrentEventListener = function(event){
+	    if(event.key === "Enter"){
+		cellData.setExpression(sheetCellEditor.value);
+		console.log(cellData.getExpression());
+		sheetCellEditor.removeEventListener("keydown", sheetEditorCurrentEventListener);
+	    }
+	};
+	sheetCellEditor.addEventListener("keydown", sheetEditorCurrentEventListener);
+    }
+
+    function selectCellElement(event){
+	var cellData = getCellDataFromElement(event.currentTarget, sheetModel.sheetData);
+	if(cellData.isSelected()){
+	    cellData.unselect();
+	}else{
+	    cellData.select();
 	}
     }
 
@@ -329,6 +399,7 @@ jt.aokUI= function(uiElement, atariConsole){
     visTab.appendChild(memVisHolder);
 
     uiElement.appendChild(standardOutput);
+    sheetTab.appendChild(sheetCellEditor);
     sheetTab.appendChild(sheetHolder);
 
     //Default Code tab is selected

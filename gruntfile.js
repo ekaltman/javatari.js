@@ -167,11 +167,11 @@ module.exports = function (grunt) {
 	    scripts: {
 		files: ["src/aok/AOK.js",
 			"src/aok/AOK_ui.js",
-			"src/runtime/index.base.html",
-			"src/runtime/index.part1.html",
-			"src/runtime/index.part2.html",
-			"src/runtime/index.part3.html",
-			"src/runtime/index.part4.html",
+			"src/runtime/standalone/index.base.html",
+			"src/runtime/standalone/index.part1.html",
+			"src/runtime/standalone/index.part2.html",
+			"src/runtime/standalone/index.part3.html",
+			"src/runtime/standalone/index.part4.html",
 			"src/main/atari/console/AtariConsole.js"
 		       ],
 		tasks: [
