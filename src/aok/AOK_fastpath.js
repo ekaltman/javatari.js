@@ -1,5 +1,8 @@
 // global vars to access emulator info (yeah yeah, whatevs)
 var aokfp_cpu = null;
+var aokui_ram = null;
+var aokui_tia = null;
+var aokui_custom_func_table = {cpu:{}, tia:{}, ram:{}};
 
 // internal var used to create unique function names
 var _aokfp_n = 0;
@@ -29,4 +32,22 @@ function aokfp_getfunc(expr) {
 	// did at:cpu as a PoC, but obviously this could support more...
 
 	return null;
+}
+
+function aokui_getfunc(expr, component){
+    var re, m;
+    re = /^at:\w+@(\w+)$/;
+    if ((m = expr.match(re)) !== null){
+	if(!aokui_custom_func_table[component].hasOwnProperty(m[1])){
+	    var s = "this.AOK__" + m[1] + " = () => { return " + m[1] + "; }";
+	    if(component === "cpu"){
+		aokfp_cpu.AOKevalhack(s);
+	    }else if(component === "tia"){
+		aokui_tia.AOKevalhack(s);
+	    }
+	    aokui_custom_func_table[component][m[1]] = eval("aokui_" + component + ".AOK__" + m[1]);
+	}
+	return aokui_custom_func_table[component][m[1]];
+    }
+    return null;
 }

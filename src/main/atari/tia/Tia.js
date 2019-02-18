@@ -1340,6 +1340,8 @@ jt.Tia = function(pCpu, pPia, audioSocket) {
     // Savestate  ------------------------------------------------
 
     // JDA
+    this.AOKevalhack = function(expr){ eval(expr); };
+
     this.aokSaveState = function(s) {
         if(!s) { s = {}; }
         s.ccp = changeClockPrevLine;

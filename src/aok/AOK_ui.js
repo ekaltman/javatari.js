@@ -339,17 +339,17 @@ jt.aokUI= function(uiElement, atariConsole){
 	loc = location.location;
 
 	if(component == "ram"){
-	    lookup = (state, location) => { return parseInt(state["ram"][parseInt(location) & 0x007f], 16); }; // mask is needed since ram starts at 0x80
+	    lookup = (location) => { return aokui_ram.read(parseInt(location)); };
 	}else if(component == "tia"){
-	    lookup = (state, location) => { return state["tia"][location];};
+	    lookup = (location) => { return aokui_getfunc("tia", location); };
 	}else if(component == "cpu"){
-	    lookup = (state, location) => { return state["cpu"][location];};
+	    lookup = (location) => { return aokui_getfunc("cpu", location); };
 	}
 
 	updateFunction = function(c){
-	    return (state) => {
+	    return () => {
 		var location = loc;
-		c.setValue(lookup(state, location));
+		c.setValue(lookup(location));
 	    };
 	}(cell);
 
@@ -434,9 +434,9 @@ jt.aokUI= function(uiElement, atariConsole){
 		    self.element.className = self.element.className.replace(editingCellClass, "");
 		}
 	    },
-	    update: function(emuState){
+	    update: function(){
 		if(self.updateFunc){
-		    self.updateFunc(emuState);
+		    self.updateFunc();
 		}else{
 		    fireAOKLogEvent("SHEET ERROR - Cell: "+ columnNumberToLetter(self.column) + "_" + self.row + " has no update function.");
 		}
@@ -670,18 +670,18 @@ at:cpu@PC(f824)		{
     });
 
     aok.aok_event.on(aok.aok_event.CONSOLE_FRAME_DISPATCH, function(eventData){
-	applyNewTextValuesMap(memVisGridElementArray, eventData.ram);
+	//applyNewTextValuesMap(memVisGridElementArray, aokui_ram.aokSaveState());
 
 	var i;
 	for(i = 0; i < sheetModel.frameUpdateList.length; i++){
-	    sheetModel.frameUpdateList[i].update(eventData);
+	    sheetModel.frameUpdateList[i].update();
 	}
     });
 
     aok.aok_event.on(aok.aok_event.CONSOLE_INSTR_DISPATCH, function(eventData){
 	var i;
 	for(i = 0; i < sheetModel.instrUpdateList.length; i++){
-	    sheetModel.instrUpdateList[i].update(eventData);
+	    sheetModel.instrUpdateList[i].update();
 	}
 
     });
