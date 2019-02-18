@@ -23,7 +23,7 @@ jt.AtariConsole = function(mainVideoClock) {
         videoStandardAutoDetectionStart();
         consoleControlsSocket.firePowerAndUserPauseStateUpdate();
 // JDA
-// Moved coding example to AOK_ui.js 
+// Moved coding example to AOK_ui.js
 // JDA end
     };
 
@@ -106,7 +106,7 @@ jt.AtariConsole = function(mainVideoClock) {
 		} else {
 			aok.frame(null);
 		}
-	aok.aok_event.fire(aok.aok_event.AOK_FRAME_DISPATCH, ram.aokSaveState());
+	aok.aok_event.fire(aok.aok_event.CONSOLE_FRAME_DISPATCH, aok_getState(aok.currentState));
 		// JDA end
         tia.frame();
     }

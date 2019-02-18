@@ -20,6 +20,8 @@ jt.M6502 = function() {
 	aok_getState = getstate;
     };
 
+    // aok fastpath hack to get the value of cpu register state match without using the full playspecs engine
+    // functions generated in AOK_fastpath.js that are evaluated here at runtime while evaluating language state in AOK.js
     this.AOKevalhack = function(expr) { eval(expr); }
     // JDA end
 
@@ -109,10 +111,11 @@ jt.M6502 = function() {
     var fetchOpcodeAndDecodeInstruction = function() {
 		// JDA
 		if (aok_dohook_instr) {
-			aok.instructionDispatch(aok_getState(aok.currentState));
+		    aok.instructionDispatch(aok_getState(aok.currentState));
 		} else {
 			aok.instructionDispatch(null);
 		}
+	aok.aok_event.fire(aok.aok_event.CONSOLE_INSTR_DISPATCH, aok_getState(aok.currentState));
 		// JDA end
         opcode = bus.read(PC);
         instruction = instructions[opcode];

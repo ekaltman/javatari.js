@@ -204,7 +204,7 @@ jt.aokUI= function(uiElement, atariConsole){
 
 
     // Spreadsheet Component
-    var sheetModel = {sheetData: []};
+    var sheetModel = {sheetData: [], frameUpdateList: [], instrUpdateList: []};
     var coordLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     var initMaxNumberColumns = 26;
     var initMaxNumberRows = 50;
@@ -227,55 +227,187 @@ jt.aokUI= function(uiElement, atariConsole){
     sheetHolder.style.width = "640px";
     sheetHolder.style.height = "360px";
 
+
+    var sheetColorTable = {
+	red: "#FF0000",
+	green: "#00FF00",
+	blue: "#0000FF",
+	yellow: "#FFFF00",
+	purple: "#800080",
+	gray: "#808080",
+	grey: "#808080",
+	pink: "#FFC0CB"
+    };
+
     function columnNumberToLetter(num){
 	return coordLetters[num];
     }
 
-    function parseCellExpression(expression){
-	//Implement language parser here! Yikes!
-	return {
-	    style: "",
-	    innerHTML: expression
-	};
+    // Spreadsheet cell parsing functions
+
+    // Sheet function table for argument types and function linkage
+    var sheetFuncTable = {
+	heat: {args: 2, argTypes: ['location', 'color'], func_exec: sheetHeatFunc},
+	frame: {args: 1, argTypes: ['location'], func_exec: (location, cell) => sheetLocUpdateFunc(location, "frame", cell)},
+	atariColor: {args: 1, argTypes: ['location'], func_exec: sheetAtariColorFunc}
+    };
+
+    // Sheet Argument Type table for argument objects to functions
+    // Example: heat function expects both location and color
+    // so from regex groups, we get object:
+    // {location:
+    //    {
+    //       component: XX,
+    //       location: YY
+    //    },
+    //  color:
+    //    {
+    //       web: <colorName>,
+    //       rgb: #<colorValue>
+    //    }
+    //}
+    var sheetArgTypeRegex = {
+	location: /at:(?<component>\w+)@(?<location>\w+)/,
+	color: /^(?<web>red|blue|green|yellow|gray|grey|purple|pink)?|^(?<rgb>#[0-9A-F]{6})?/
+    };
+
+    function parseCellExpression(expression, cell){
+
+	// Parses according to spec document:
+	// heat(location, colorVertical) -> heatmap applied to specific location (ram@0xFF, cpu@A, etc.) with specific seed color (either basic web colors or RGB)
+	// at:{memorySource}@{address}, updates on instruction as default, to align with language
+	// frame(location), updates location data on frame instead of instruction
+	// changed:{memorySource}@{address}, updates on change signal (may not do this)
+	// eval(location) => style object, arbitrary function that alters cell styling / text
+
+	var match, funcName, memorySource, address, inExpression;
+	var returnObj = {style: "", value: expression, updateFunction: null}; //initial fall through values
+
+	var funcMatch = /(^\w+)\(/; //match on function name
+	var at_re = /^at/; //match on at:
+	var changed_re = /^changed/; // match on changed:
+	if((at_re.exec(expression)) !== null){
+	    match = sheetArgTypeRegex.location.exec(expression);
+	    returnObj = sheetLocUpdateFunc(match.groups, "instr", cell);
+	}else if((changed_re.exec(expression)) !== null){
+	    // changed expression parsing
+	}else if((match = funcMatch.exec(expression)) !== null){
+	    // match function and deal with execution
+	    funcName = match[1];
+	    inExpression = inExpression.slice(match[0].length);
+	    if(sheetFuncTable[funcName]){
+		var argCount = 0;
+		var argMatch;
+		var funcArgs = [];
+		while(argCount > sheetFuncTable[funcName].args ){
+		    // look up the argument regex and parse for this argument
+		    if((argMatch = sheetArgTypeRegex[sheetFuncTable[funcName].argTypes[argCount]].exec(inExpression)) !== null) {
+			funcArgs.push(argMatch.groups);
+		    };
+		    inExpression = inExpression.slice(argMatch[0].length);
+		    argCount++;
+		}
+		funcArgs.push(cell); //cell reference is last argument to functions
+		returnObj = sheetFuncTable[funcName].func_exec.apply(funcArgs);
+	    }else{
+		fireAOKLogEvent("SHEET_ERROR - Function name:" + funcName + " not recognized.");
+		returnObj.value = "ERROR!";
+	    }
+	}
+
+	return returnObj;
 
     }
 
+    function sheetHeatFunc(location, color, cell){
+	var component, loc, baseColor;
+	component = location.component;
+	loc = location.location;
+	if(color.web){
+	    baseColor = sheetColorTable[color.web];
+	}else if(color.rgb){
+	    baseColor = sheetColorTable[color.rgb];
+	}
+    }
+
+    function sheetAtariColorFunc(location, cell){
+    }
+
+    function sheetLocUpdateFunc(location, updateLoop, cell){
+	var component, loc, lookup;
+	component = location.component;
+	loc = location.location;
+
+	if(component == "ram"){
+	    lookup = (state, location) => { return parseInt(state["ram"][parseInt(location) & 0x007f], 16); }; // mask is needed since ram starts at 0x80
+	}else if(component == "tia"){
+	    lookup = (state, location) => { return state["tia"][location];};
+	}else if(component == "cpu"){
+	    lookup = (state, location) => { return state["cpu"][location];};
+	}
+
+	updateFunction = function(c){
+	    return (state) => {
+		var location = loc;
+		c.setValue(lookup(state, location));
+	    };
+	}(cell);
+
+	if(updateLoop == "instr"){
+	    sheetModel.instrUpdateList.push(cell);
+	}else if(updateLoop == "frame"){
+	    sheetModel.frameUpdateList.push(cell);
+	}
+
+	return {
+	    updateFunction: updateFunction,
+	    style: "",
+	    value: "at:" + component + "@" + loc
+	};
+    }
+
+    function applyCellStyle(styleObject, cellElement){
+    }
+
+    //Spreadsheet Cell object
+
     function CellData(row, column, element){
 	const selectedCellClass = " aok-ui-sheet-table-selected-cell";
+	const editingCellClass = " aok-ui-sheet-table-edited-cell";
 	var self = this;
 	self.currentExpression = "";
+	self.value = "";
 	self.previousExpressions = [];
 	self.nextExpressions = [];
 	self.column = column;
 	self.row = row;
-	self.hasStyle = false;
 	self.element = element;
 	self.selected = false;
+	self.editing = false;
+	self.updateFunc = null;
+	self.state = null;
 
 	return {
-	    isSelected: function(){
-		return self.selected;
-	    },
+	    isSelected: () => self.selected,
+	    isEditing: () => self.editing,
 	    column: self.column,
 	    row: self.row,
+	    element: () => self.element,
 	    setExpression: function(expression){
-		self.previousExpressions.push(self.currentExpression);
-		self.currentExpression = expression;
-		self.state = parseCellExpression(self.currentExpression);
-		self.element.innerHTML = self.state.innerHTML;
+		if(self.currentExpression !== expression){
+		    self.previousExpressions.push(self.currentExpression);
+		    self.currentExpression = expression;
+		    self.state = parseCellExpression(self.currentExpression, getCellFromSheetData(sheetModel.sheetData, self.row, self.column)); // getCellFromSheetData needed to get CellData function closure
+		    if(self.state.style){
+			applyCellStyle(self.state.style, self.element);
+		    }
+		    if(self.state.updateFunction){
+			self.updateFunc = self.state.updateFunction;
+		    }
+		    self.element.innerHTML = self.state.value;
+		}
 	    },
-	    getExpression: function(){
-		return self.currentExpression;
-	    },
-	    getComputedStyle: function(){
-		return self.state.style;
-	    },
-	    hasStyle: function(){
-		return self.hasStyle;
-	    },
-	    element: function(){
-		return self.element;
-	    },
+	    getExpression: () => self.currentExpression,
 	    select: function(){
 		if(!self.selected){
 		    self.element.className += selectedCellClass;
@@ -287,7 +419,34 @@ jt.aokUI= function(uiElement, atariConsole){
 		    self.element.className = self.element.className.replace(selectedCellClass, "");
 		    self.selected = false;
 		}
-	    }
+	    },
+	    edit: function(){
+		if(!self.editing){
+		    if(!self.selected) self.selected = true; // editing a cell is also selecting it
+		    self.element.className += editingCellClass;
+		    self.editing = true;
+		}
+	    },
+	    stopEdit: function(){
+		if(self.editing){
+		    if(self.selected) self.selected = false;
+		    self.editing = false;
+		    self.element.className = self.element.className.replace(editingCellClass, "");
+		}
+	    },
+	    update: function(emuState){
+		if(self.updateFunc){
+		    self.updateFunc(emuState);
+		}else{
+		    fireAOKLogEvent("SHEET ERROR - Cell: "+ columnNumberToLetter(self.column) + "_" + self.row + " has no update function.");
+		}
+	    },
+	    setValue: (value) => {
+		self.value = value;
+		self.state.value = value;
+		self.element.innerHTML = value;
+	    },
+	    getValue: () => self.value
 	};
     };
 
@@ -351,24 +510,67 @@ jt.aokUI= function(uiElement, atariConsole){
     // Just store the current cell editing event in local variable
     var sheetEditorCurrentEventListener;
 
-    function getCellDataFromElement(cellElement, sheetModel){
+    function operateOnSheetData(sheetData, func){
+	sheetData.forEach((rowArray) => {
+	    rowArray.forEach((cellData) => {
+		func(cellData);
+	    });
+	});
+    }
+
+    function filterSheetData(sheetData, filterFunc){
+	var filtered = [];
+	operateOnSheetData(sheetData, (cellData) => {
+	    if(filterFunc(cellData)){
+		filtered.push(cellData);
+	    }
+	});
+	return filtered;
+    }
+
+    function getCellFromSheetData(sheetData, row, column){
+	return sheetData[row][column];
+    }
+
+    function getSelectedCells(sheetData){
+	return filterSheetData(sheetData, (cellData) => { return cellData.isSelected(); });
+    }
+
+    function selectAllCells(sheetData){
+	operateOnSheetData(sheetData, (cellData) => { cellData.select(); });
+    }
+
+    function deselectAllCells(sheetData){
+	operateOnSheetData(sheetData, (cellData) => { cellData.unselect(); });
+    }
+
+    function getCellDataFromElement(cellElement, sheetData){
 	var splitId = cellElement.id.split("-");
 	var row = splitId[1];
 	var col = splitId[2];
-	return sheetModel[row][col];
+	return sheetData[row][col];
     }
 
     function editCellElement(event){
 	var cellData = getCellDataFromElement(event.currentTarget, sheetModel.sheetData);
-	sheetCellEditor.value = cellData.getExpression();
-	sheetEditorCurrentEventListener = function(event){
-	    if(event.key === "Enter"){
-		cellData.setExpression(sheetCellEditor.value);
-		console.log(cellData.getExpression());
-		sheetCellEditor.removeEventListener("keydown", sheetEditorCurrentEventListener);
-	    }
-	};
-	sheetCellEditor.addEventListener("keydown", sheetEditorCurrentEventListener);
+	if(!cellData.isEditing()){
+	    sheetCellEditor.value = cellData.getExpression();
+	    sheetEditorCurrentEventListener = function(event){
+		if(event.key === "Enter"){
+		    cellData.setExpression(sheetCellEditor.value);
+		    console.log(cellData.getExpression());
+		    sheetCellEditor.removeEventListener("keydown", sheetEditorCurrentEventListener);
+		    sheetCellEditor.value = "";
+		    sheetCellEditor.blur();
+		    cellData.stopEdit();
+		    cellData.unselect();
+		}
+	    };
+	    sheetCellEditor.addEventListener("keydown", sheetEditorCurrentEventListener);
+	    sheetCellEditor.focus();
+	    cellData.unselect();
+	    cellData.edit();
+	}
     }
 
     function selectCellElement(event){
@@ -379,6 +581,7 @@ jt.aokUI= function(uiElement, atariConsole){
 	    cellData.select();
 	}
     }
+
 
 
     // Attach UI Elements
@@ -431,6 +634,11 @@ at:cpu@PC(f824)		{
 
     // UI State managment
 
+    function fireAOKLogEvent(message){
+	aok.aok_event.fire(aok.aok_event.AOK_MESSAGE, {s: message});
+	return true;
+    }
+
     aok.aok_event.on(aok.aok_event.AOK_MESSAGE, function(eventData){
 	standardOutput.innerHTML += "<span class='aok_message_standard_output'>" + eventData.s + "<br>";
     });
@@ -456,10 +664,25 @@ at:cpu@PC(f824)		{
     });
 
     aok.aok_event.on(aok.aok_event.AOK_FRAME_DISPATCH, function(eventData){
-	applyNewTextValuesMap(memVisGridElementArray, eventData);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_INSTR_DISPATCH, function(eventData){
+    });
+
+    aok.aok_event.on(aok.aok_event.CONSOLE_FRAME_DISPATCH, function(eventData){
+	applyNewTextValuesMap(memVisGridElementArray, eventData.ram);
+
+	var i;
+	for(i = 0; i < sheetModel.frameUpdateList.length; i++){
+	    sheetModel.frameUpdateList[i].update(eventData);
+	}
+    });
+
+    aok.aok_event.on(aok.aok_event.CONSOLE_INSTR_DISPATCH, function(eventData){
+	var i;
+	for(i = 0; i < sheetModel.instrUpdateList.length; i++){
+	    sheetModel.instrUpdateList[i].update(eventData);
+	}
 
     });
 

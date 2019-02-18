@@ -277,6 +277,7 @@ jt.AOK = function(emu) {
         self.lastState = self.currentState;
         self.currentState = temp;
         Javatari.room.console.aokSaveState(self.currentState);
+	return self.currentState;
     }
     this.flipState = flipState;
     
@@ -843,7 +844,7 @@ jt.AOK = function(emu) {
 	}
 	if (lstate.fastpath) {
 		aok_dohook_instr = aok_dohook_frame = false;
-console.log("[AOK fastpath detected]");
+	    console.log("[AOK fastpath detected]");
 	}
 
 	// run initial commands, if any
@@ -866,8 +867,10 @@ console.log("[AOK fastpath detected]");
 	    AOK_BUBBLE: "aok_bubble",
 	    AOK_HIGHLIGHT: "aok_highlight",
 	    AOK_LOG: "aok_log",
-	    AOK_INSTR_DISPATCH: "aok_instr_dispatch",
-	    AOK_FRAME_DISPATCH: "aok_frame_dispatch",
+	    AOK_INSTR_DISPATCH: "aok_instr_dispatch", //dispatched on language state instr call
+	    AOK_FRAME_DISPATCH: "aok_frame_dispatch", // dispatched on language state frame call
+	    CONSOLE_INSTR_DISPATCH: "aok_instr_dispatch", // dispatched on AtariConsole instr call
+	    CONSOLE_FRAME_DISPATCH: "aok_frame_dispatch", // dispatched on AtariConsole frame call
 	    fire: function(event, eventData){
 		var queue = self.event_queues[event];
 

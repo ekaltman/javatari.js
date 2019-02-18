@@ -172,7 +172,8 @@ module.exports = function (grunt) {
 			"src/runtime/standalone/index.part2.html",
 			"src/runtime/standalone/index.part3.html",
 			"src/runtime/standalone/index.part4.html",
-			"src/main/atari/console/AtariConsole.js"
+			"src/main/atari/console/AtariConsole.js",
+			"src/main/atari/cpu/M6502.js"
 		       ],
 		tasks: [
 		    "clean:init",
