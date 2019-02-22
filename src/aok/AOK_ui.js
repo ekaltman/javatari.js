@@ -339,17 +339,19 @@ jt.aokUI= function(uiElement, atariConsole){
 	loc = location.location;
 
 	if(component == "ram"){
-	    lookup = (location) => { return aokui_ram.read(parseInt(location)); };
+	    lookup = function(location){
+		return eval("() => { return aokui_ram.read(parseInt(" + location + "))}");
+	    }(loc);
 	}else if(component == "tia"){
-	    lookup = (location) => { return aokui_getfunc("tia", location); };
+	    lookup = aokui_getfunc("tia", loc);
 	}else if(component == "cpu"){
-	    lookup = (location) => { return aokui_getfunc("cpu", location); };
+	    lookup = aokui_getfunc("cpu", loc);
 	}
 
 	updateFunction = function(c){
 	    return () => {
-		var location = loc;
-		c.setValue(lookup(location));
+		lookup();
+		//c.setValue(lookup());
 	    };
 	}(cell);
 
@@ -670,7 +672,7 @@ at:cpu@PC(f824)		{
     });
 
     aok.aok_event.on(aok.aok_event.CONSOLE_FRAME_DISPATCH, function(eventData){
-	//applyNewTextValuesMap(memVisGridElementArray, aokui_ram.aokSaveState());
+	applyNewTextValuesMap(memVisGridElementArray, aokui_ram.aokSaveState());
 
 	var i;
 	for(i = 0; i < sheetModel.frameUpdateList.length; i++){

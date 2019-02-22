@@ -167,6 +167,7 @@ module.exports = function (grunt) {
 	    scripts: {
 		files: ["src/aok/AOK.js",
 			"src/aok/AOK_ui.js",
+			"src/aok/AOK_fastpath.js",
 			"src/runtime/standalone/index.base.html",
 			"src/runtime/standalone/index.part1.html",
 			"src/runtime/standalone/index.part2.html",

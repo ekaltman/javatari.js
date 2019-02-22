@@ -34,20 +34,16 @@ function aokfp_getfunc(expr) {
 	return null;
 }
 
-function aokui_getfunc(expr, component){
-    var re, m;
-    re = /^at:\w+@(\w+)$/;
-    if ((m = expr.match(re)) !== null){
-	if(!aokui_custom_func_table[component].hasOwnProperty(m[1])){
-	    var s = "this.AOK__" + m[1] + " = () => { return " + m[1] + "; }";
+function aokui_getfunc(component, location){
+	if(!aokui_custom_func_table[component].hasOwnProperty(location)){
+	    var s = "this.AOK__" + location + " = function(){ return " + location + "; }";
 	    if(component === "cpu"){
 		aokfp_cpu.AOKevalhack(s);
+		aokui_custom_func_table[component][location] = "aokfp_" + component + ".AOK__" + location;
 	    }else if(component === "tia"){
 		aokui_tia.AOKevalhack(s);
+		aokui_custom_func_table[component][location] = "aokui_" + component + ".AOK__" + location;
 	    }
-	    aokui_custom_func_table[component][m[1]] = eval("aokui_" + component + ".AOK__" + m[1]);
 	}
-	return aokui_custom_func_table[component][m[1]];
+    return eval(aokui_custom_func_table[component][location]);
     }
-    return null;
-}
