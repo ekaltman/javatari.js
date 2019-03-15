@@ -34,9 +34,11 @@ jt.aokUI= function(uiElement, atariConsole){
     var tabHolder = document.createElement("div");
     var codeTab = document.createElement("div");
     var sheetTab = document.createElement("div");
+    var sheetExportTab = document.createElement("div");
     var visTab = document.createElement("div");
     var codeTabButton = document.createElement("button");
     var sheetTabButton = document.createElement("button");
+    var sheetExportTabButton = document.createElement("button");
     var visTabButton = document.createElement("button");
 
 
@@ -44,22 +46,27 @@ jt.aokUI= function(uiElement, atariConsole){
 
     codeTab.setAttribute("id", "aok-ui-codetab");
     sheetTab.setAttribute("id", "aok-ui-sheettab");
+    sheetExportTab.setAttribute("id", "aok-ui-sheet-export-tab");
     visTab.setAttribute("id", "aok-ui-vistab");
 
     codeTab.className = "aok-ui-tabcontent";
     sheetTab.className = "aok-ui-tabcontent";
+    sheetExportTab.className = "aok-ui-tabcontent";
     visTab.className = "aok-ui-tabcontent";
 
     codeTabButton.className = "aok-ui-tablinks";
     sheetTabButton.className = "aok-ui-tablinks";
+    sheetExportTabButton.className = "aok-ui-tablinks";
     visTabButton.className = "aok-ui-tablinks";
 
-    codeTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-codetab"); });
-    sheetTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-sheettab");});
-    visTabButton.addEventListener("click", function(e){ openTab(e, "aok-ui-vistab");});
+    codeTabButton.addEventListener("click", (e) => { openTab(e, "aok-ui-codetab"); });
+    sheetTabButton.addEventListener("click", (e) => { openTab(e, "aok-ui-sheettab");});
+    sheetExportTabButton.addEventListener("click", (e) => { openTab(e, "aok-ui-sheet-export-tab");});
+    visTabButton.addEventListener("click", (e) => { openTab(e, "aok-ui-vistab");});
 
     codeTabButton.innerHTML = "Code";
     sheetTabButton.innerHTML = "Sheet";
+    sheetExportTabButton.innerHTML = "Export";
     visTabButton.innerHTML = "Vis";
 
 
@@ -204,7 +211,10 @@ jt.aokUI= function(uiElement, atariConsole){
 
 
     // Spreadsheet Component
-    var sheetModel = {sheetData: [], frameUpdateList: [], instrUpdateList: []};
+    var sheetModel = {sheetData: [],
+		      frameUpdateList: [], instrUpdateList: [], //update lists for active cells
+		      pendingValueUpdates:{}, pendingStyleUpdates:{}, //update dicts for on requestAnim updates
+		      pendingUpdate: false}; //pending update flag for requestAnim updates
     var coordLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     var initMaxNumberColumns = 26;
     var initMaxNumberRows = 50;
@@ -229,18 +239,23 @@ jt.aokUI= function(uiElement, atariConsole){
 
 
     var sheetColorTable = {
-	red: "#FF0000",
-	green: "#00FF00",
-	blue: "#0000FF",
-	yellow: "#FFFF00",
-	purple: "#800080",
-	gray: "#808080",
-	grey: "#808080",
-	pink: "#FFC0CB"
+	red: "rgb(255,0,0)",
+	green: "rgb(0,255,0)",
+	blue: "#rgb(0,0,255)",
+	yellow: "rgb(255,255,0)",
+	purple: "rgb(128,0,128)",
+	gray: "rgb(128,128,128)",
+	grey: "rgb(128,128,128)",
+	pink: "rgb(255, 192, 203)"
     };
 
     function columnNumberToLetter(num){
 	return coordLetters[num];
+    }
+
+    //fix column addressing issue
+    function columnLetterToNumber(letter){
+	return coordLetters.indexOf(letter) + 1;
     }
 
     // Spreadsheet cell parsing functions
@@ -267,7 +282,7 @@ jt.aokUI= function(uiElement, atariConsole){
     //    }
     //}
     var sheetArgTypeRegex = {
-	location: /at:(?<component>\w+)@(?<location>\w+)/,
+	location: /at:(?<component>\w+)@(?<location>\w+)(,|\))/,
 	color: /^(?<web>red|blue|green|yellow|gray|grey|purple|pink)?|^(?<rgb>#[0-9A-F]{6})?/
     };
 
@@ -294,25 +309,29 @@ jt.aokUI= function(uiElement, atariConsole){
 	}else if((match = funcMatch.exec(expression)) !== null){
 	    // match function and deal with execution
 	    funcName = match[1];
-	    inExpression = inExpression.slice(match[0].length);
+	    inExpression = expression.slice(match[0].length);
 	    if(sheetFuncTable[funcName]){
 		var argCount = 0;
 		var argMatch;
 		var funcArgs = [];
-		while(argCount > sheetFuncTable[funcName].args ){
+		while(argCount < sheetFuncTable[funcName].args ){
 		    // look up the argument regex and parse for this argument
 		    if((argMatch = sheetArgTypeRegex[sheetFuncTable[funcName].argTypes[argCount]].exec(inExpression)) !== null) {
 			funcArgs.push(argMatch.groups);
-		    };
+		    }
 		    inExpression = inExpression.slice(argMatch[0].length);
 		    argCount++;
 		}
 		funcArgs.push(cell); //cell reference is last argument to functions
-		returnObj = sheetFuncTable[funcName].func_exec.apply(funcArgs);
+		returnObj = sheetFuncTable[funcName].func_exec.apply(null, funcArgs);
 	    }else{
 		fireAOKLogEvent("SHEET_ERROR - Function name:" + funcName + " not recognized.");
 		returnObj.value = "ERROR!";
 	    }
+	}
+
+	if(expression === ""){
+	    sheetRemoveFromUpdateLists(cell.id);
 	}
 
 	return returnObj;
@@ -326,9 +345,21 @@ jt.aokUI= function(uiElement, atariConsole){
 	if(color.web){
 	    baseColor = sheetColorTable[color.web];
 	}else if(color.rgb){
-	    baseColor = sheetColorTable[color.rgb];
 	}
+
+	//convert color to rgb
+
+	//map color to location value
+
     }
+
+    // from https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors/13542669
+    // p is percent of shade from -1.0 to 1.0, black to white
+    // c is color in rgb(X,X,X)
+    const RGB_Log_Shade=(p,c)=>{
+    var i=parseInt,r=Math.round,[a,b,c,d]=c.split(","),P=p<0,t=P?0:p*255**2,P=P?1+p:1-p;
+    return"rgb"+(d?"a(":"(")+r((P*i(a[3]=="a"?a.slice(5):a.slice(4))**2+t)**0.5)+","+r((P*i(b)**2+t)**0.5)+","+r((P*i(c)**2+t)**0.5)+(d?","+d:")");
+    };
 
     function sheetAtariColorFunc(location, cell){
     }
@@ -350,8 +381,7 @@ jt.aokUI= function(uiElement, atariConsole){
 
 	updateFunction = function(c){
 	    return () => {
-		lookup();
-		//c.setValue(lookup());
+		sheetScheduleUpdate(c, lookup().toString(16));
 	    };
 	}(cell);
 
@@ -371,6 +401,53 @@ jt.aokUI= function(uiElement, atariConsole){
     function applyCellStyle(styleObject, cellElement){
     }
 
+    function sheetScheduleUpdate(cell, newValue){
+	var currentValue = cell.getValue();
+	if(newValue === currentValue) //if the value hasn't changed, there's no value to update
+	    return null;
+
+	sheetModel.pendingValueUpdates[cell.id] = newValue;
+	if(!sheetModel.pendingUpdate){
+	    sheetModel.pendingUpdate = true;
+	    window.requestAnimationFrame(updateSheetAnimFrame);
+	}
+
+	return null;
+    }
+
+    function updateSheetAnimFrame(){
+	for(var key in sheetModel.pendingValueUpdates){
+	    var [col, row] = key.split("_"); //destructing declaration, new to ES6
+	    sheetModel.sheetData[row][col].setValue(sheetModel.pendingValueUpdates[key]);
+	}
+	sheetModel.pendingValueUpdates = {};
+	sheetModel.pendingUpdate = false;
+    }
+
+    // Could optimize this to look per list and such, probably not needed
+    function sheetRemoveFromUpdateLists(cellID){
+	var removed = false;
+	for(var i = 0; i < sheetModel.frameUpdateList.length; i++){
+	    if(sheetModel.frameUpdateList[i].id === cellID){
+		sheetModel.frameUpdateList.splice(i, 1);
+		removed = true;
+		break;
+	    }
+	}
+	if(removed){
+	    return true;
+	}
+
+	for(var i = 0; i < sheetModel.instrUpdateList.length; i++){
+	    if(sheetModel.instrUpdateList[i].id === cellID){
+		sheetModel.instrUpdateList.splice(i, 1);
+		return true;
+	    }
+	}
+
+	return false;
+    }
+
     //Spreadsheet Cell object
 
     function CellData(row, column, element){
@@ -388,12 +465,15 @@ jt.aokUI= function(uiElement, atariConsole){
 	self.editing = false;
 	self.updateFunc = null;
 	self.state = null;
+	self.id = self.column + "_" + self.row;
+	self.updating = false;
 
 	return {
 	    isSelected: () => self.selected,
 	    isEditing: () => self.editing,
 	    column: self.column,
 	    row: self.row,
+	    id: self.id,
 	    element: () => self.element,
 	    setExpression: function(expression){
 		if(self.currentExpression !== expression){
@@ -478,7 +558,7 @@ jt.aokUI= function(uiElement, atariConsole){
 
     sheetTableElement.appendChild(headerRow);
 
-    for (var i = 0; i < initMaxNumberRows; i++){ // adding one for header row
+    for (var i = 0; i < initMaxNumberRows + 1; i++){ // adding one for header row
 	var currentRowElement = document.createElement("tr");
 	if(sheetModel.sheetData[i] === undefined){
 	    sheetModel.sheetData[i] = [];
@@ -501,7 +581,7 @@ jt.aokUI= function(uiElement, atariConsole){
 		element.setAttribute("id", "cell-" + i + "-" + j);
 		element.className = "aok-ui-sheet-table-cell";
 		element.style.width = cellWidth + "px";
-		element.onclick = function(e){ selectCellElement(e)};
+		element.onclick = function(e){ toggleCellMouseClick(e)};
 		element.ondblclick = function(e){ editCellElement(e)};
 		sheetModel.sheetData[i][j] = new CellData(i, j, element);
 	    }
@@ -575,13 +655,49 @@ jt.aokUI= function(uiElement, atariConsole){
 	}
     }
 
-    function selectCellElement(event){
+    function toggleCellMouseClick(event){
 	var cellData = getCellDataFromElement(event.currentTarget, sheetModel.sheetData);
-	if(cellData.isSelected()){
-	    cellData.unselect();
-	}else{
-	    cellData.select();
+	toggleSelectCell(cellData.column, cellData.row, sheetModel.sheetData);
+    }
+
+    function selectCell(column, row, sheetData){
+	var cell = getCellFromSheetData(sheetData, row, column);
+	if(!cell.isSelected()){
+	    cell.select();
 	}
+    }
+
+    function unSelectCell(column, row, sheetData){
+	var cell = getCellFromSheetData(sheetData, row, column);
+	if(cell.isSelected()){
+	    cell.unselect();
+	}
+    }
+
+    function toggleSelectCell(column, row, sheetData){
+	var cell = getCellFromSheetData(sheetData, row, column);
+	if(!cell.isSelected()){
+	    cell.select();
+	}else{
+	    cell.unselect();
+	}
+    }
+
+    //Bubble UI Code
+
+    function generateBubbleElement(row, col, message){
+	var bubbleXPos = ((col - 1) * cellWidth) + rowHeaderCellWidth + (cellWidth / 2);
+	var bubbleYPos = (row * (cellHeight + 3)) + columnHeaderCellHeight + (cellHeight / 2);
+
+	var bubbleElement = document.createElement('div');
+	bubbleElement.setAttribute("id","test_center_"+row+"_"+col);
+	bubbleElement.style.position = "absolute";
+	bubbleElement.append(document.createTextNode(message));
+	sheetHolder.append(bubbleElement);
+	bubbleElement.style.left = bubbleXPos + "px";
+	bubbleElement.style.top = bubbleYPos + "px";
+	bubbleElement.style.border = "solid 1px black";
+	bubbleElement.style.backgroundColor = "white";
     }
 
 
@@ -590,6 +706,7 @@ jt.aokUI= function(uiElement, atariConsole){
     uiElement.appendChild(tabHolder);
     tabHolder.appendChild(codeTabButton);
     tabHolder.appendChild(sheetTabButton);
+    tabHolder.appendChild(sheetExportTabButton);
     tabHolder.appendChild(visTabButton);
 
     uiElement.appendChild(codeTab);
@@ -600,12 +717,31 @@ jt.aokUI= function(uiElement, atariConsole){
     }
 
     uiElement.appendChild(sheetTab);
+    uiElement.appendChild(sheetExportTab);
     uiElement.appendChild(visTab);
     visTab.appendChild(memVisHolder);
 
     uiElement.appendChild(standardOutput);
     sheetTab.appendChild(sheetCellEditor);
     sheetTab.appendChild(sheetHolder);
+
+    /*
+    var testCenters = [];
+    for(var row = 0; row < sheetModel.sheetData.length; row++){
+	for(var col = 1; col < sheetModel.sheetData[row].length; col++){
+	    var testElement = document.createElement("div");
+	    testElement.setAttribute("id","test_center_"+row+"_"+col);
+	    testElement.style.position = "absolute";
+	    testElement.style.height = "10px";
+	    testElement.style.width = "10px";
+	    testElement.style.backgroundColor = "red";
+	    sheetHolder.append(testElement);
+	    testElement.style.left = ((col - 1) * cellWidth) + rowHeaderCellWidth + (cellWidth / 2) + "px";
+	    testElement.style.top = (row * (cellHeight +3 )) + columnHeaderCellHeight + (cellHeight / 2) + "px";
+	}
+    }
+    */
+
 
     //Default Code tab is selected
 
@@ -652,17 +788,25 @@ at:cpu@PC(f824)		{
 
     aok.aok_event.on(aok.aok_event.AOK_BUBBLE, function(eventData){
 	var coord_message = "Bubble at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + " with message: " + eventData.s + "<br>";
+	var [col, row] = splitAt(1, eventData.coord);
+	generateBubbleElement(parseInt(row), columnLetterToNumber(col), eventData.s);
 	standardOutput.innerHTML += coord_message;
     });
 
     aok.aok_event.on(aok.aok_event.AOK_NORMAL, function(eventData){
 	var coord_message = "Normal at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + "<br>";
 	standardOutput.innerHTML += coord_message;
+	var [col, row] = splitAt(1, eventData.coord);
+	unSelectCell(columnLetterToNumber(col), parseInt(row), sheetModel.sheetData);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_HIGHLIGHT, function(eventData){
 	var coord_message = "Highlight at coord: " + "<span class ='aok_coord_standard_output'>" + eventData.coord +"</span>" +"<br>";
 	standardOutput.innerHTML += coord_message;
+	var [col, row] = splitAt(1, eventData.coord);
+	console.log(col);
+	console.log(row);
+	selectCell(columnLetterToNumber(col), parseInt(row), sheetModel.sheetData);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_FRAME_DISPATCH, function(eventData){
@@ -687,5 +831,9 @@ at:cpu@PC(f824)		{
 	}
 
     });
+
+
+    //Utilties
+    const splitAt = (index, string) => [string.slice(0,index), string.slice(index)];
 
 };
