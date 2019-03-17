@@ -17,15 +17,15 @@ jt.aokUI= function(uiElement, atariConsole){
 
     //setup ui elements
     var editorElement = document.createElement("div");
-    editorElement.setAttribute("id", "ui-editor");
+    editorElement.setAttribute("id", "aok-ui-editor");
 
     var loadCodeButton = document.createElement("button");
     var loadCodeButtonTextNode = document.createTextNode("Load Editor Code");
-    loadCodeButton.setAttribute("id", "ui-run-code-button");
+    loadCodeButton.setAttribute("id", "aok-ui-run-code-button");
     loadCodeButton.appendChild(loadCodeButtonTextNode);
 
     var standardOutput = document.createElement("div");
-    standardOutput.setAttribute("id", "ui-standard-output");
+    standardOutput.setAttribute("id", "aok-ui-standard-output");
     standardOutput.style.fontFamily = "courier";
 
     //tab interface setup
@@ -255,7 +255,7 @@ jt.aokUI= function(uiElement, atariConsole){
 
     //fix column addressing issue
     function columnLetterToNumber(letter){
-	return coordLetters.indexOf(letter) + 1;
+	return coordLetters.indexOf(letter);
     }
 
     // Spreadsheet cell parsing functions
@@ -282,7 +282,7 @@ jt.aokUI= function(uiElement, atariConsole){
     //    }
     //}
     var sheetArgTypeRegex = {
-	location: /at:(?<component>\w+)@(?<location>\w+)(,|\))/,
+	location: /at:(?<component>\w+)@(?<location>\w+)(,|\))?/,
 	color: /^(?<web>red|blue|green|yellow|gray|grey|purple|pink)?|^(?<rgb>#[0-9A-F]{6})?/
     };
 
@@ -578,12 +578,12 @@ jt.aokUI= function(uiElement, atariConsole){
 		element.style.textAlign = "center";
 		element.innerHTML = "" + i;
 	    }else{
-		element.setAttribute("id", "cell-" + i + "-" + j);
+		element.setAttribute("id", "cell-" + i + "-" + (j - 1)); //zero-index the columns
 		element.className = "aok-ui-sheet-table-cell";
 		element.style.width = cellWidth + "px";
 		element.onclick = function(e){ toggleCellMouseClick(e)};
 		element.ondblclick = function(e){ editCellElement(e)};
-		sheetModel.sheetData[i][j] = new CellData(i, j, element);
+		sheetModel.sheetData[i][j - 1] = new CellData(i, j - 1, element); //zero-index the columns
 	    }
 	    currentRowElement.appendChild(element);
 	}
@@ -685,12 +685,27 @@ jt.aokUI= function(uiElement, atariConsole){
 
     //Bubble UI Code
 
+    var activeBubbleList = [];
+    var bubbleCloseTime = 3000; //milliseconds
+
+
     function generateBubbleElement(row, col, message){
+	//check and remove duplicate location bubble
+
+	var bubbleElementId = "bubble_at_" + row + "_" + col;
+
+	for(var i = 0; i < activeBubbleList.length; i++){
+	    var bubbleReg = activeBubbleList[i];
+	    if(bubbleReg.elementId === bubbleElementId){
+		removeElementById(bubbleReg.elementId);
+		activeBubbleList.splice(i,1);
+	    }
+	}
 	var bubbleXPos = ((col - 1) * cellWidth) + rowHeaderCellWidth + (cellWidth / 2);
 	var bubbleYPos = (row * (cellHeight + 3)) + columnHeaderCellHeight + (cellHeight / 2);
 
 	var bubbleElement = document.createElement('div');
-	bubbleElement.setAttribute("id","test_center_"+row+"_"+col);
+	bubbleElement.setAttribute("id",bubbleElementId);
 	bubbleElement.style.position = "absolute";
 	bubbleElement.append(document.createTextNode(message));
 	sheetHolder.append(bubbleElement);
@@ -698,6 +713,82 @@ jt.aokUI= function(uiElement, atariConsole){
 	bubbleElement.style.top = bubbleYPos + "px";
 	bubbleElement.style.border = "solid 1px black";
 	bubbleElement.style.backgroundColor = "white";
+
+	var bubbleRegister = {elementId: bubbleElementId, createTime:Date.now()};
+	activeBubbleList.push(bubbleRegister);
+	window.requestAnimationFrame(checkRemoveActiveBubbles);
+    }
+
+    function checkRemoveActiveBubbles(){
+	var now = Date.now();
+	for(var i = 0; i < activeBubbleList.length; i++){
+	    var bubbleReg = activeBubbleList[i];
+	    if(now - bubbleReg.createTime > bubbleCloseTime){
+		removeElementById(bubbleReg.elementId);
+		activeBubbleList.splice(i,1);
+	    }
+	}
+
+	if(activeBubbleList.length > 0){
+	    window.requestAnimationFrame(checkRemoveActiveBubbles);
+	}
+    }
+
+
+    //Export Sheet Controls
+    var sheetExportTabOutput = document.createElement("textarea");
+    sheetExportTabOutput.setAttribute("id","aok-ui-export-tab-output");
+    sheetExportTabOutput.style.height = "350px";
+    sheetExportTabOutput.style.width = "100%";
+    sheetExportTabOutput.style.backgroundColor = "white";
+    sheetExportTabOutput.style.overflow = "scroll";
+
+    var sheetExportButton = document.createElement("button");
+    sheetExportButton.innerHTML = "Export Sheet";
+    sheetExportButton.addEventListener("click", () => { generateSheetExport(); });
+
+    var sheetImportButton = document.createElement("button");
+    sheetImportButton.innerHTML = "Import Sheet";
+    sheetImportButton.addEventListener("click", () => { importFromSheetExport(); });
+
+    var exportDelimiter = "|";
+
+    function generateSheetExport(){
+	//Iterate over sheet and organize expressions
+	var exportString = "";
+	for(var row = 0; row < initMaxNumberRows; row++){
+	    for(var col = 0; col < initMaxNumberColumns; col++){
+		exportString += sheetModel.sheetData[row][col].getExpression();
+		if(col !== initMaxNumberColumns - 1){ // do not add a delimiter after last column
+		    exportString += exportDelimiter;
+		}
+	    }
+	    exportString += "\n";
+	}
+
+	sheetExportTabOutput.value = exportString;
+    }
+
+    function importFromSheetExport(){
+	var rows = sheetExportTabOutput.value.split("\n");
+	if(!rows[rows.length - 1]){ //check for trailing newline character
+	    rows.splice(1, rows.length - 1);
+	}
+	if(rows.length > initMaxNumberRows){
+	    console.log("Max rows exceeded on import, row total: " + rows.length);
+	    return;
+	}
+	for(var row = 0; row < rows.length; row++){
+	    var cols = rows[row].split(exportDelimiter);
+	    if(cols.length > initMaxNumberColumns){
+		console.log("Max columns exceeded on import, row: " + row + " columns:" + cols.length);
+		break;
+	    }
+	    for(var col = 0; col < cols.length; col++){
+		sheetModel.sheetData[row][col].setExpression(cols[col]);
+	    }
+	}
+
     }
 
 
@@ -724,6 +815,10 @@ jt.aokUI= function(uiElement, atariConsole){
     uiElement.appendChild(standardOutput);
     sheetTab.appendChild(sheetCellEditor);
     sheetTab.appendChild(sheetHolder);
+
+    sheetExportTab.appendChild(sheetExportTabOutput);
+    sheetExportTab.appendChild(sheetExportButton);
+    sheetExportTab.appendChild(sheetImportButton);
 
     /*
     var testCenters = [];
@@ -835,5 +930,9 @@ at:cpu@PC(f824)		{
 
     //Utilties
     const splitAt = (index, string) => [string.slice(0,index), string.slice(index)];
+    const removeElementById = function(elementId){
+	var element = document.getElementById(elementId);
+	element.parentNode.removeChild(element);
+    };
 
 };
