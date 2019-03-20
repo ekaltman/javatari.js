@@ -303,7 +303,12 @@ jt.aokUI= function(uiElement, atariConsole){
 	var changed_re = /^changed/; // match on changed:
 	if((at_re.exec(expression)) !== null){
 	    match = sheetArgTypeRegex.location.exec(expression);
-	    returnObj = sheetLocUpdateFunc(match.groups, "instr", cell);
+	    if(!match){
+		fireAOKLogEvent("SHEET_ERROR in 'at' declaration");
+		returnObj.value = "ERROR";
+	    }else{
+		returnObj = sheetLocUpdateFunc(match.groups, "instr", cell);
+	    }
 	}else if((changed_re.exec(expression)) !== null){
 	    // changed expression parsing
 	}else if((match = funcMatch.exec(expression)) !== null){
@@ -314,18 +319,34 @@ jt.aokUI= function(uiElement, atariConsole){
 		var argCount = 0;
 		var argMatch;
 		var funcArgs = [];
+		var argError;
 		while(argCount < sheetFuncTable[funcName].args ){
 		    // look up the argument regex and parse for this argument
 		    if((argMatch = sheetArgTypeRegex[sheetFuncTable[funcName].argTypes[argCount]].exec(inExpression)) !== null) {
 			funcArgs.push(argMatch.groups);
+		    }else{
+			argError = true;
+			break;
 		    }
 		    inExpression = inExpression.slice(argMatch[0].length);
 		    argCount++;
 		}
-		funcArgs.push(cell); //cell reference is last argument to functions
-		returnObj = sheetFuncTable[funcName].func_exec.apply(null, funcArgs);
+
+		if(!argError){
+		    funcArgs.push(cell); //cell reference is last argument to functions
+		    try{
+			returnObj = sheetFuncTable[funcName].func_exec.apply(null, funcArgs);
+		    }
+		    catch(err){
+			fireAOKLogEvent("SHEET_ERROR in Function declaration: " + funcName);
+			returnObj.value = "ERROR!";
+		    }
+		}else{
+		    fireAOKLogEvent("SHEET_ERROR - Argument Error in '" + funcName +"' declaration");
+		    returnObj.value = "ERROR!";
+		}
 	    }else{
-		fireAOKLogEvent("SHEET_ERROR - Function name:" + funcName + " not recognized.");
+		fireAOKLogEvent("SHEET_ERROR - Function name: '" + funcName + "' not recognized.");
 		returnObj.value = "ERROR!";
 	    }
 	}
@@ -774,14 +795,16 @@ jt.aokUI= function(uiElement, atariConsole){
 	if(!rows[rows.length - 1]){ //check for trailing newline character
 	    rows.splice(1, rows.length - 1);
 	}
+
 	if(rows.length > initMaxNumberRows){
-	    console.log("Max rows exceeded on import, row total: " + rows.length);
+	    fireAOKLogEvent("Max rows exceeded on import, row total: " + rows.length);
 	    return;
 	}
+
 	for(var row = 0; row < rows.length; row++){
 	    var cols = rows[row].split(exportDelimiter);
 	    if(cols.length > initMaxNumberColumns){
-		console.log("Max columns exceeded on import, row: " + row + " columns:" + cols.length);
+		fireAOKLogEvent("Max columns exceeded on import, row: " + row + " columns:" + cols.length);
 		break;
 	    }
 	    for(var col = 0; col < cols.length; col++){
