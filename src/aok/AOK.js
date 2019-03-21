@@ -503,6 +503,10 @@ jt.AOK = function(emu) {
 	AOKEvent.fire(AOKEvent.AOK_BUBBLE, {s:s, coord: coord});
     	console.log("NYI: bubble " + coord + " " + s);
     }
+    function c_label(coord, s) {
+	AOKEvent.fire(AOKEvent.AOK_LABEL, {s:s, coord: coord});
+    	console.log("NYI: label " + coord + " " + s);
+    }
 
     // run a list of commands
     function runcmds(L) {
@@ -541,6 +545,7 @@ jt.AOK = function(emu) {
 		'bubble':	[ 'cw',		c_bubble ],
 		'continue':	[ '',		c_continue ],
 		'eval':		[ 'w',		c_eval ],	// for Eric :-)
+		'label':	[ 'cw',		c_label ],
 	};
 
 	// Scanner returns lexemes whose token type can be distinguished
@@ -862,6 +867,7 @@ jt.AOK = function(emu) {
 	self.fired = [];
 
 	return {
+	    AOK_LABEL: "aok_label",
 	    AOK_MESSAGE: "aok_message",
 	    AOK_NORMAL: "aok_normal",
 	    AOK_BUBBLE: "aok_bubble",

@@ -911,6 +911,14 @@ at:cpu@PC(f824)		{
 	standardOutput.innerHTML += coord_message;
     });
 
+    aok.aok_event.on(aok.aok_event.AOK_LABEL, function(eventData){
+	var [col, row] = splitAt(1, eventData.coord);
+	var cell = getCellFromSheetData(sheetModel.sheetData,
+					parseInt(row),
+					columnLetterToNumber(col));
+	cell.setValue(eventData.s);
+    });
+
     aok.aok_event.on(aok.aok_event.AOK_NORMAL, function(eventData){
 	var coord_message = "Normal at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + "<br>";
 	standardOutput.innerHTML += coord_message;
