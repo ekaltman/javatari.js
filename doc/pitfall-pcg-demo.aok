@@ -1,0 +1,151 @@
+// Pitfall! PCG visualization
+//
+// spreadsheet at end
+
+<START>		{
+	// only need to check this on frame transitions
+	frame
+
+	// set up initial highlights
+	highlight D2
+	highlight E2
+	highlight F2
+	highlight H2
+	highlight I2
+	highlight J2
+
+	highlight E3
+	highlight E4
+	highlight E5
+	highlight D5
+
+	highlight I3
+	highlight I4
+
+	// update binary representation
+	eval "c_label('A2', (aokui_ram.read(0x81) >> 7) & 1)"
+	eval "c_label('B2', (aokui_ram.read(0x81) >> 6) & 1)"
+	eval "c_label('D2', (aokui_ram.read(0x81) >> 5) & 1)"
+	eval "c_label('E2', (aokui_ram.read(0x81) >> 4) & 1)"
+	eval "c_label('F2', (aokui_ram.read(0x81) >> 3) & 1)"
+	eval "c_label('H2', (aokui_ram.read(0x81) >> 2) & 1)"
+	eval "c_label('I2', (aokui_ram.read(0x81) >> 1) & 1)"
+	eval "c_label('J2', (aokui_ram.read(0x81) >> 0) & 1)"
+
+	// un-highlight whatever was previously lit up
+	normal C5
+	normal C6
+	normal C7
+	normal C8
+	normal C9
+	normal C10
+	normal C11
+	normal C12
+
+	// calculate screen type cell to highlight
+	eval "c_highlight('C' + (5 + ((aokui_ram.read(0x81) >> 3) & 7)))"
+
+	// un-highlight whatever was previously lit up
+	normal I5
+	normal I6
+	normal I7
+	normal I8
+	normal I9
+	normal I10
+	normal I11
+	normal I12
+
+	// calculate object type cell to highlight
+	eval "c_highlight('I' + (5 + ((aokui_ram.read(0x81) >> 0) & 7)))"
+}
+
+changed:ram@0x81	{
+	// update binary representation
+	eval "c_label('A2', (aokui_ram.read(0x81) >> 7) & 1)"
+	eval "c_label('B2', (aokui_ram.read(0x81) >> 6) & 1)"
+	eval "c_label('D2', (aokui_ram.read(0x81) >> 5) & 1)"
+	eval "c_label('E2', (aokui_ram.read(0x81) >> 4) & 1)"
+	eval "c_label('F2', (aokui_ram.read(0x81) >> 3) & 1)"
+	eval "c_label('H2', (aokui_ram.read(0x81) >> 2) & 1)"
+	eval "c_label('I2', (aokui_ram.read(0x81) >> 1) & 1)"
+	eval "c_label('J2', (aokui_ram.read(0x81) >> 0) & 1)"
+
+	// un-highlight whatever was previously lit up
+	normal C5
+	normal C6
+	normal C7
+	normal C8
+	normal C9
+	normal C10
+	normal C11
+	normal C12
+
+	// calculate screen type cell to highlight
+	eval "c_highlight('C' + (5 + ((aokui_ram.read(0x81) >> 3) & 7)))"
+
+	// un-highlight whatever was previously lit up
+	normal I5
+	normal I6
+	normal I7
+	normal I8
+	normal I9
+	normal I10
+	normal I11
+	normal I12
+
+	// calculate object type cell to highlight
+	eval "c_highlight('I' + (5 + ((aokui_ram.read(0x81) >> 0) & 7)))"
+}
+
+//
+Pitfall!|PCG|(LFSR at $81)|||||||||||||||||||||||
+at:ram@0x81|=||||||||||||||||||||||||
+x|x||x|x|x||x|x|x||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|1x hole|000||||||000|1x log|(rolling)|||||||||||||||
+|3x hole|001||||||001|2x logs|(rolling, tight)|||||||||||||||
+tarpit|+ vine|010||||||010|2x logs|(rolling, spaced)|||||||||||||||
+swamp|+ vine|011||||||011|3x logs||||||||||||||||
+|crocs|100||||||100|1x log||||||||||||||||
+treasure +|black quicksand|101||||||101|3x logs||||||||||||||||
+black quicksand|+ vine|110||||||110|fire||||||||||||||||
+blue quicksand|no vine|111||||||111|snake||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+|||||||||||||||||||||||||
+
