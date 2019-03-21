@@ -916,7 +916,7 @@ at:cpu@PC(f824)		{
 	var cell = getCellFromSheetData(sheetModel.sheetData,
 					parseInt(row),
 					columnLetterToNumber(col));
-	cell.setValue(eventData.s);
+	cell.setExpression(eventData.s);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_NORMAL, function(eventData){
