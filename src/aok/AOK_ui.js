@@ -722,8 +722,9 @@ jt.aokUI= function(uiElement, atariConsole){
 		activeBubbleList.splice(i,1);
 	    }
 	}
-	var bubbleXPos = ((col - 1) * cellWidth) + rowHeaderCellWidth + (cellWidth / 2);
-	var bubbleYPos = (row * (cellHeight + 3)) + columnHeaderCellHeight + (cellHeight / 2);
+	var targetCell= document.getElementById("cell-" + row + "-" + col);
+	var bubbleXPos = targetCell.offsetLeft + targetCell.offsetWidth / 2;
+	var bubbleYPos = targetCell.offsetTop + targetCell.offsetHeight / 2;
 
 	var bubbleElement = document.createElement('div');
 	bubbleElement.setAttribute("id",bubbleElementId);
