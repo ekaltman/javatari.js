@@ -524,7 +524,7 @@ jt.AOK = function(emu) {
     }
 
     this.newfile = function(s) {
-	var error, last = null, lineno = 1;
+	var error, last = null, lineno = 1, expectbytes = false;
 
 	// Command table, maps command name into arg-type/function.
 	// Argument type encodings are
@@ -574,6 +574,12 @@ jt.AOK = function(emu) {
 		if (last != null) {
 			rv = last;
 			last = null;
+			return rv;
+		}
+
+		if (expectbytes) {
+			rv = s;
+			s = '';
 			return rv;
 		}
 
@@ -644,7 +650,7 @@ jt.AOK = function(emu) {
 
 	// Ye olde recursive descent parser, for the grammar
 	//
-	// start ::= { globalstmt } EOF
+	// start ::= { globalstmt } [ 'spreadsheet' BYTE* ] EOF
 	// globalstmt ::= '\n'
 	// globalstmt ::= STATE action
 	// globalstmt ::= [ STATE ] psexpr action
@@ -794,6 +800,18 @@ jt.AOK = function(emu) {
 			var ps = makePS(expr);
 			lstate.spalist.push([ s, ps, actions ])
 			break;
+		    case '"':
+			if (t == '"spreadsheet"') {
+				lex();
+				// mmm, tasty lexical feedback
+				expectbytes = true;
+				s = lex();
+				expectbytes = false;
+				//console.log(s);
+				AOKEvent.fire(AOKEvent.AOK_SHEET_IMPORT, {s:s});
+				break;
+			}
+			// falls through
 		    default:
 			throw "expected pattern";
 		}
