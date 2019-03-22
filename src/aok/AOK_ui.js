@@ -770,51 +770,41 @@ jt.aokUI= function(uiElement, atariConsole){
 
     var sheetImportButton = document.createElement("button");
     sheetImportButton.innerHTML = "Import Sheet";
-    sheetImportButton.addEventListener("click", () => { importFromSheetExport(); });
+    sheetImportButton.addEventListener("click", () => { importSheetSpec(sheetExportTabOutput.value);});
 
     var exportDelimiter = "|";
 
     function generateSheetExport(){
 	//Iterate over sheet and organize expressions
-	var exportString = "";
+	var exportPreJSONObj = {};
 	for(var row = 0; row < initMaxNumberRows; row++){
 	    for(var col = 0; col < initMaxNumberColumns; col++){
-		exportString += sheetModel.sheetData[row][col].getExpression();
-		if(col !== initMaxNumberColumns - 1){ // do not add a delimiter after last column
-		    exportString += exportDelimiter;
+		var cellCoord = row + "_" + col;
+		var cellExpression = getCellFromSheetData(sheetModel.sheetData, row, col).getExpression();
+		if(cellExpression){
+		    exportPreJSONObj[cellCoord] = cellExpression;
 		}
 	    }
-	    exportString += "\n";
 	}
 
-	sheetExportTabOutput.value = exportString;
+	sheetExportTabOutput.value = JSON.stringify(exportPreJSONObj);
     }
 
-    function importFromSheetExport(){
-	var rows = sheetExportTabOutput.value.split("\n");
-	if(!rows[rows.length - 1]){ //check for trailing newline character
-	    rows.splice(1, rows.length - 1);
+    function importSheetSpec(jsonString){
+	try{
+	    var importSheetJSON = JSON.parse(jsonString);
+	}
+	catch(err){
+	    fireAOKLogEvent("Error Importing JSON sheet spec.");
 	}
 
-	if(rows.length > initMaxNumberRows){
-	    fireAOKLogEvent("Max rows exceeded on import, row total: " + rows.length);
-	    return;
+	for(var rowCol in importSheetJSON){
+	    var [row, col] = rowCol.split("_");
+	    row = parseInt(row);
+	    col = parseInt(col);
+	    getCellFromSheetData(sheetModel.sheetData, row, col).setExpression(importSheetJSON[rowCol]);
 	}
-
-	for(var row = 0; row < rows.length; row++){
-	    var cols = rows[row].split(exportDelimiter);
-	    if(cols.length > initMaxNumberColumns){
-		fireAOKLogEvent("Max columns exceeded on import, row: " + row + " columns:" + cols.length);
-		break;
-	    }
-	    for(var col = 0; col < cols.length; col++){
-		sheetModel.sheetData[row][col].setExpression(cols[col]);
-	    }
-	}
-
     }
-
-
 
     // Attach UI Elements
     uiElement.appendChild(tabHolder);
@@ -933,6 +923,10 @@ at:cpu@PC(f824)		{
 	console.log(col);
 	console.log(row);
 	selectCell(columnLetterToNumber(col), parseInt(row), sheetModel.sheetData);
+    });
+
+    aok.aok_event.on(aok.aok_event.AOK_SHEET_IMPORT, function(eventData){
+	importSheetSpec(eventData.s);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_FRAME_DISPATCH, function(eventData){

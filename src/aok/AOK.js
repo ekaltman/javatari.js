@@ -864,10 +864,11 @@ jt.AOK = function(emu) {
 	var self = this;
 
 	self.event_queues = {};
-	self.fired = [];
+	//self.fired = []; not really used, could for event logging?
 
 	return {
 	    AOK_LABEL: "aok_label",
+	    AOK_SHEET_IMPORT: "aok_sheet_import",
 	    AOK_MESSAGE: "aok_message",
 	    AOK_NORMAL: "aok_normal",
 	    AOK_BUBBLE: "aok_bubble",
