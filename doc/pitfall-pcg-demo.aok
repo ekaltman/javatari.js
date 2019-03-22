@@ -1,151 +1,92 @@
 // Pitfall! PCG visualization
 //
-// spreadsheet at end
+// N.B. if console logging is occuring, there's a pause on screen transitions
 
 <START>		{
 	// only need to check this on frame transitions
 	frame
 
 	// set up initial highlights
-	highlight D2
-	highlight E2
-	highlight F2
-	highlight H2
-	highlight I2
-	highlight J2
-
-	highlight E3
+	highlight D4
 	highlight E4
-	highlight E5
-	highlight D5
-
-	highlight I3
+	highlight F4
+	highlight H4
 	highlight I4
+	highlight J4
+
+	highlight E5
+	highlight I5
 
 	// update binary representation
-	eval "c_label('A2', (aokui_ram.read(0x81) >> 7) & 1)"
-	eval "c_label('B2', (aokui_ram.read(0x81) >> 6) & 1)"
-	eval "c_label('D2', (aokui_ram.read(0x81) >> 5) & 1)"
-	eval "c_label('E2', (aokui_ram.read(0x81) >> 4) & 1)"
-	eval "c_label('F2', (aokui_ram.read(0x81) >> 3) & 1)"
-	eval "c_label('H2', (aokui_ram.read(0x81) >> 2) & 1)"
-	eval "c_label('I2', (aokui_ram.read(0x81) >> 1) & 1)"
-	eval "c_label('J2', (aokui_ram.read(0x81) >> 0) & 1)"
+	eval "c_label('A4', (aokui_ram.read(0x81) >> 7) & 1)"
+	eval "c_label('B4', (aokui_ram.read(0x81) >> 6) & 1)"
+	eval "c_label('D4', (aokui_ram.read(0x81) >> 5) & 1)"
+	eval "c_label('E4', (aokui_ram.read(0x81) >> 4) & 1)"
+	eval "c_label('F4', (aokui_ram.read(0x81) >> 3) & 1)"
+	eval "c_label('H4', (aokui_ram.read(0x81) >> 2) & 1)"
+	eval "c_label('I4', (aokui_ram.read(0x81) >> 1) & 1)"
+	eval "c_label('J4', (aokui_ram.read(0x81) >> 0) & 1)"
 
-	// un-highlight whatever was previously lit up
-	normal C5
-	normal C6
-	normal C7
-	normal C8
-	normal C9
-	normal C10
-	normal C11
-	normal C12
+	// clear bit 7 label and highlighting
+	label A5 ""
+	normal A4
+	normal A5
+
+	// un-highlight whatever was previously lit up for scene type
+	eval "for (var i = 6; i <= 13; i++) { c_normal('D' + i); }"
+	eval "for (var i = 6; i <= 13; i++) { c_normal('E' + i); }"
 
 	// calculate screen type cell to highlight
-	eval "c_highlight('C' + (5 + ((aokui_ram.read(0x81) >> 3) & 7)))"
+	eval "{ var i; for (i = 6; i <= 6 + ((aokui_ram.read(0x81) >> 3) & 7); i++) { c_highlight('E' + i); } c_highlight('D' + --i); }"
 
-	// un-highlight whatever was previously lit up
-	normal I5
-	normal I6
-	normal I7
-	normal I8
-	normal I9
-	normal I10
-	normal I11
-	normal I12
+	// bit 7 highlight and label, if needed
+	eval "{ var st = ((aokui_ram.read(0x81) >> 3) & 7); if (st < 2) { c_highlight('A4'); c_highlight('A5'); } }"
+	eval "{ var st = (aokui_ram.read(0x81) >> 3); if ((st & 7) < 2) { c_label('A5', (st & 0x10) ? '1 = right wall' : '0 = left wall'); } }"
 
-	// calculate object type cell to highlight
-	eval "c_highlight('I' + (5 + ((aokui_ram.read(0x81) >> 0) & 7)))"
+	// un-highlight whatever was previously lit up for object type
+	eval "for (var i = 6; i <= 21; i++) { c_normal('I' + i); }"
+	eval "for (var i = 6; i <= 21; i++) { c_normal('J' + i); }"
+
+	// object type
+	eval "{ var st = ((aokui_ram.read(0x81) >> 3) & 7); var n = (aokui_ram.read(0x81) & 7); var base = 6; var i; if (st == 4) { base = 15; n = ((n >> 1) & 1); } if (st == 5) { base = 18; n &= 3; } for (i = 6; i <= base + n; i++) { c_highlight('I' + i); } c_highlight('J' + --i); }"
+
 }
 
 changed:ram@0x81	{
 	// update binary representation
-	eval "c_label('A2', (aokui_ram.read(0x81) >> 7) & 1)"
-	eval "c_label('B2', (aokui_ram.read(0x81) >> 6) & 1)"
-	eval "c_label('D2', (aokui_ram.read(0x81) >> 5) & 1)"
-	eval "c_label('E2', (aokui_ram.read(0x81) >> 4) & 1)"
-	eval "c_label('F2', (aokui_ram.read(0x81) >> 3) & 1)"
-	eval "c_label('H2', (aokui_ram.read(0x81) >> 2) & 1)"
-	eval "c_label('I2', (aokui_ram.read(0x81) >> 1) & 1)"
-	eval "c_label('J2', (aokui_ram.read(0x81) >> 0) & 1)"
+	eval "c_label('A4', (aokui_ram.read(0x81) >> 7) & 1)"
+	eval "c_label('B4', (aokui_ram.read(0x81) >> 6) & 1)"
+	eval "c_label('D4', (aokui_ram.read(0x81) >> 5) & 1)"
+	eval "c_label('E4', (aokui_ram.read(0x81) >> 4) & 1)"
+	eval "c_label('F4', (aokui_ram.read(0x81) >> 3) & 1)"
+	eval "c_label('H4', (aokui_ram.read(0x81) >> 2) & 1)"
+	eval "c_label('I4', (aokui_ram.read(0x81) >> 1) & 1)"
+	eval "c_label('J4', (aokui_ram.read(0x81) >> 0) & 1)"
 
-	// un-highlight whatever was previously lit up
-	normal C5
-	normal C6
-	normal C7
-	normal C8
-	normal C9
-	normal C10
-	normal C11
-	normal C12
+	// clear bit 7 label and highlighting
+	label A5 ""
+	normal A4
+	normal A5
+
+	// un-highlight whatever was previously lit up for scene type
+	eval "for (var i = 6; i <= 13; i++) { c_normal('D' + i); }"
+	eval "for (var i = 6; i <= 13; i++) { c_normal('E' + i); }"
 
 	// calculate screen type cell to highlight
-	eval "c_highlight('C' + (5 + ((aokui_ram.read(0x81) >> 3) & 7)))"
+	eval "{ var i; for (i = 6; i <= 6 + ((aokui_ram.read(0x81) >> 3) & 7); i++) { c_highlight('E' + i); } c_highlight('D' + --i); }"
 
-	// un-highlight whatever was previously lit up
-	normal I5
-	normal I6
-	normal I7
-	normal I8
-	normal I9
-	normal I10
-	normal I11
-	normal I12
+	// bit 7 highlight and label, if needed
+	eval "{ var st = ((aokui_ram.read(0x81) >> 3) & 7); if (st < 2) { c_highlight('A4'); c_highlight('A5'); } }"
+	eval "{ var st = (aokui_ram.read(0x81) >> 3); if ((st & 7) < 2) { c_label('A5', (st & 0x10) ? '1 = right wall' : '0 = left wall'); } }"
 
-	// calculate object type cell to highlight
-	eval "c_highlight('I' + (5 + ((aokui_ram.read(0x81) >> 0) & 7)))"
+	// un-highlight whatever was previously lit up for object type
+	eval "for (var i = 6; i <= 21; i++) { c_normal('I' + i); }"
+	eval "for (var i = 6; i <= 21; i++) { c_normal('J' + i); }"
+
+	// object type
+	eval "{ var st = ((aokui_ram.read(0x81) >> 3) & 7); var n = (aokui_ram.read(0x81) & 7); var base = 6; var i; if (st == 4) { base = 15; n = ((n >> 1) & 1); } if (st == 5) { base = 18; n &= 3; } for (i = 6; i <= base + n; i++) { c_highlight('I' + i); } c_highlight('J' + --i); }"
+
 }
 
-//
-Pitfall!|PCG|(LFSR at $81)|||||||||||||||||||||||
-at:ram@0x81|=||||||||||||||||||||||||
-x|x||x|x|x||x|x|x||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|1x hole|000||||||000|1x log|(rolling)|||||||||||||||
-|3x hole|001||||||001|2x logs|(rolling, tight)|||||||||||||||
-tarpit|+ vine|010||||||010|2x logs|(rolling, spaced)|||||||||||||||
-swamp|+ vine|011||||||011|3x logs||||||||||||||||
-|crocs|100||||||100|1x log||||||||||||||||
-treasure +|black quicksand|101||||||101|3x logs||||||||||||||||
-black quicksand|+ vine|110||||||110|fire||||||||||||||||
-blue quicksand|no vine|111||||||111|snake||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-|||||||||||||||||||||||||
-
+spreadsheet
+{"0_0":"Pitfall!","0_1":"PCG","0_2":"(LFSR at $81)","2_0":"at:ram@0x81","2_1":"=","4_3":1,"4_5":1,"4_7":1,"4_8":1,"4_9":1,"6_2":"1x hole","6_3":"000","6_9":"000","6_10":"1x logs","6_11":"rolling","7_2":"3x holes","7_3":"001","7_9":"001","7_10":"2x logs","7_11":"rolling","7_12":"tight spacing","8_1":"tarpit","8_2":"+ vine","8_3":"010","8_9":"010","8_10":"2x logs","8_11":"rolling","9_1":"swamp","9_2":"+ vine","9_3":"011","9_9":"011","9_10":"3x logs","9_11":"rolling","10_2":"crocs","10_3":"100","10_9":"100","10_10":"1x log","11_1":"treasure +","11_2":"black quicksand","11_3":"101","11_9":"101","11_10":"3x logs","12_1":"black quicksand","12_2":"+ vine","12_3":"110","12_9":"110","12_10":"fire","13_1":"blue quicksand","13_2":"no vine","13_3":"111","13_9":"111","13_10":"snake","15_9":"x0x","15_10":"no vine","16_9":"x1x","16_10":"vine","18_9":"x00","18_10":"silver bag","19_9":"x01","19_10":"silver bar","20_9":"x10","20_10":"gold bar","21_9":"x11","21_10":"diamond ring"}
