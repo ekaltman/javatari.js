@@ -486,26 +486,55 @@ jt.AOK = function(emu) {
     	eval(s);
     }
 
-    // XXX nyi
-    function c_highlight(coord) {
-	AOKEvent.fire(AOKEvent.AOK_HIGHLIGHT, {coord: coord});
-    	console.log("NYI: highlight " + coord);
-    }
-    function c_normal(coord) {
-	AOKEvent.fire(AOKEvent.AOK_NORMAL, {coord: coord});
-    	console.log("NYI: normal " + coord);
-    }
     function c_message(s) {
 	AOKEvent.fire(AOKEvent.AOK_MESSAGE, {s:s});
-    	console.log("NYI: message " + s);
+    	//console.log("message " + s);
     }
     function c_bubble(coord, s) {
 	AOKEvent.fire(AOKEvent.AOK_BUBBLE, {s:s, coord: coord});
-    	console.log("NYI: bubble " + coord + " " + s);
+    	//console.log("bubble " + coord + " " + s);
+    }
+
+    function docoordrange(event, coord, args) {
+    	if (coord.includes(':')) {
+		// XXX this should be preprocessed and canonicalized
+		var re = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/, m;
+		if ((m = re.exec(coord)) !== null) {
+			var AL = [ m[1], m[3] ];
+			AL.sort();
+			var NL = [ parseInt(m[2]), parseInt(m[4]) ];
+			NL.sort(function(a, b) { return a - b });
+			for (var col = AL[0]; col <= AL[1]; ) {
+				for (var row = NL[0]; row <= NL[1]; row++) {
+					args.coord = col + row;
+					AOKEvent.fire(event, args);
+				}
+				// XXX - will break past 'Z'
+				col = String.fromCharCode(col.charCodeAt(0) +1);
+			}
+		} else {
+			assert(false);
+		}
+	} else {
+		args.coord = coord;
+		AOKEvent.fire(event, args);
+	}
+    }
+
+    function c_highlight(coord) {
+	docoordrange(AOKEvent.AOK_HIGHLIGHT, coord, {});
+	//AOKEvent.fire(AOKEvent.AOK_HIGHLIGHT, {coord: coord});
+    	//console.log("highlight " + coord);
+    }
+    function c_normal(coord) {
+	docoordrange(AOKEvent.AOK_NORMAL, coord, {});
+	//AOKEvent.fire(AOKEvent.AOK_NORMAL, {coord: coord});
+    	//console.log("normal " + coord);
     }
     function c_label(coord, s) {
-	AOKEvent.fire(AOKEvent.AOK_LABEL, {s:s, coord: coord});
-    	console.log("NYI: label " + coord + " " + s);
+	docoordrange(AOKEvent.AOK_LABEL, coord, {s: s});
+	//AOKEvent.fire(AOKEvent.AOK_LABEL, {s:s, coord: coord});
+    	//console.log("label " + coord + " " + s);
     }
 
     // run a list of commands
@@ -530,6 +559,7 @@ jt.AOK = function(emu) {
 	// Argument type encodings are
 	//	n	positive integer
 	//	c	spreadsheet coordinate
+	//	C	spreadsheet coordinate or coordinate range
 	//	w	word (or quoted string)
 	//	s	state name
 	//
@@ -539,13 +569,13 @@ jt.AOK = function(emu) {
 		'instr':	[ '',		c_instr ],
 		'begin':	[ 's',		c_begin ],
 		'log':		[ 'w',		c_log ],
-		'highlight':	[ 'c',		c_highlight ],
-		'normal':	[ 'c',		c_normal ],
+		'highlight':	[ 'C',		c_highlight ],
+		'normal':	[ 'C',		c_normal ],
 		'message':	[ 'w',		c_message ],
 		'bubble':	[ 'cw',		c_bubble ],
 		'continue':	[ '',		c_continue ],
 		'eval':		[ 'w',		c_eval ],	// for Eric :-)
-		'label':	[ 'cw',		c_label ],
+		'label':	[ 'Cw',		c_label ],
 	};
 
 	// Scanner returns lexemes whose token type can be distinguished
@@ -679,6 +709,12 @@ jt.AOK = function(emu) {
 				re = /^[A-Z]+\d+$/;
 				if (re.test(args[i]) == false) {
 					throw "bad coordinate for " + cmd;
+				}
+				break;
+			    case 'C':
+				re = /^[A-Z]+\d+(:[A-Z]+\d+)?$/;
+				if (re.test(args[i]) == false) {
+					throw "bad coordinate range for " + cmd;
 				}
 				break;
 			    case 's':
