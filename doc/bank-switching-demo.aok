@@ -1,5 +1,4 @@
 // Asteroids "F8" bank switching visualization demo
-// see end of file for importable spreadsheet contents
 //
 // can be adapted for others by changing addresses
 // e.g., E.T. => use 86 (but it changes too quickly to notice)
@@ -13,39 +12,15 @@
 
 <START>	{
 	// highlight bank 0 outline
-	highlight A1
-	highlight B1
-	highlight C1
-	highlight A2
-	highlight B2
-	highlight C2
-	highlight A3
-	highlight B3
-	highlight C3
+	highlight "A1:C3"
 }
 
 // bank 0
 at:cpu@PC(dff3)		{
 	//log "TO BANK 1!"
-	highlight E1
-	highlight F1
-	highlight G1
-	highlight E2
-	highlight F2
-	highlight G2
-	highlight E3
-	highlight F3
-	highlight G3
 
-	normal A1
-	normal B1
-	normal C1
-	normal A2
-	normal B2
-	normal C2
-	normal A3
-	normal B3
-	normal C3
+	highlight "E1:G3"
+	normal "A1:C3"
 
 	begin bank1
 }
@@ -53,79 +28,12 @@ at:cpu@PC(dff3)		{
 <bank1> at:cpu@PC(dff3)	{
 	//log "TO BANK 0!"
 
-	highlight A1
-	highlight B1
-	highlight C1
-	highlight A2
-	highlight B2
-	highlight C2
-	highlight A3
-	highlight B3
-	highlight C3
-
-	normal E1
-	normal F1
-	normal G1
-	normal E2
-	normal F2
-	normal G2
-	normal E3
-	normal F3
-	normal G3
+	highlight "A1:C3"
+	normal "E1:G3"
 
 	// "" returns to the set of unqualified patterns (i.e., bank 0)
 	begin ""
 }
 
-// spreadsheet to import
-//Asteroids||F8 bank switching|||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|ROM Bank 0||||ROM Bank 1||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-//|||||||||||||||||||||||||
-
+spreadsheet
+{"0_0":"Asteroids","0_2":"F8 bank switching","2_1":"ROM Bank 0","2_5":"ROM Bank 1"}
