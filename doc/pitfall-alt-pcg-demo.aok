@@ -1,0 +1,221 @@
+// Pitfall! PCG visualization
+//
+// N.B. if console logging is occuring, there's a pause on screen transitions
+
+<START>		{
+	frame
+
+	// set up initial highlights
+	highlight "D4:F4"
+	highlight "H4:J4"
+	highlight E5
+	highlight I5
+
+	// wait for the initial value to be loaded into $81 so that
+	// spreadsheet initialization's done correctly
+	begin waitforframe1
+}
+
+<waitforframe1> at:ram@0x81(!m--------) {
+	begin ""
+}
+
+// start of spreadsheet updating
+at:ram@0x81(!m--------)	{
+	// clear binary representation to all 0s
+	label "A4:B4" 0
+	label "D4:F4" 0
+	label "H4:J4" 0
+
+	// clear bit 7 label and highlighting
+	label A5 ""
+	normal "A4:A5"
+
+	// un-highlight whatever was previously lit up for scene type
+	normal "D6:E13"
+	// un-highlight whatever was previously lit up for object type
+	normal "I6:J21"
+
+	continue
+}
+
+// now set 1s for binary representation as needed
+at:ram@0x81(!m1-------)	{
+	label A4 1
+	continue
+}
+at:ram@0x81(!m-1------)	{
+	label B4 1
+	continue
+}
+at:ram@0x81(!m--1-----)	{
+	label D4 1
+	continue
+}
+at:ram@0x81(!m---1----)	{
+	label E4 1
+	continue
+}
+at:ram@0x81(!m----1---)	{
+	label F4 1
+	continue
+}
+at:ram@0x81(!m-----1--)	{
+	label H4 1
+	continue
+}
+at:ram@0x81(!m------1-)	{
+	label I4 1
+	continue
+}
+at:ram@0x81(!m-------1)	{
+	label J4 1
+	continue
+}
+
+// bit 7 highlight and label, if needed
+at:ram@0x81(!m0-00----)	{
+	highlight "A4:A5"
+	label A5 "0 = left wall"
+	continue
+}
+at:ram@0x81(!m1-00----)	{
+	highlight "A4:A5"
+	label A5 "1 = right wall"
+	continue
+}
+
+// scene type highlighting
+at:ram@0x81(!m--000---)	{
+	highlight "D6:E6"
+	continue
+}
+at:ram@0x81(!m--001---)	{
+	highlight "E6:E7"
+	highlight D7
+	continue
+}
+at:ram@0x81(!m--010---)	{
+	highlight "E6:E8"
+	highlight D8
+	continue
+}
+at:ram@0x81(!m--011---)	{
+	highlight "E6:E9"
+	highlight D9
+	continue
+}
+at:ram@0x81(!m--100---)	{
+	highlight "E6:E10"
+	highlight D10
+	continue
+}
+at:ram@0x81(!m--101---)	{
+	highlight "E6:E11"
+	highlight D11
+	continue
+}
+at:ram@0x81(!m--110---)	{
+	highlight "E6:E12"
+	highlight D12
+	continue
+}
+at:ram@0x81(!m--111---)	{
+	highlight "E6:E13"
+	highlight D13
+	continue
+}
+
+// object type highlighting - normal, gets overridden by crocs/treasure
+at:ram@0x81(!m-----000)	{
+	highlight "I6:J6"
+	continue
+}
+at:ram@0x81(!m-----001)	{
+	highlight "I6:I7"
+	highlight J7
+	continue
+}
+at:ram@0x81(!m-----010)	{
+	highlight "I6:I8"
+	highlight J8
+	continue
+}
+at:ram@0x81(!m-----011)	{
+	highlight "I6:I9"
+	highlight J9
+	continue
+}
+at:ram@0x81(!m-----100)	{
+	highlight "I6:I10"
+	highlight J10
+	continue
+}
+at:ram@0x81(!m-----101)	{
+	highlight "I6:I11"
+	highlight J11
+	continue
+}
+at:ram@0x81(!m-----110)	{
+	highlight "I6:I12"
+	highlight J12
+	continue
+}
+at:ram@0x81(!m-----111)	{
+	highlight "I6:I13"
+	highlight J13
+	continue
+}
+
+// object type highlighting - crocs
+at:ram@0x81(!m--100-0-)	{
+	normal "J6:J13"
+	highlight "I6:I15"
+	highlight J15
+	continue
+}
+at:ram@0x81(!m--100-1-)	{
+	normal "J6:J13"
+	highlight "I6:I16"
+	highlight J16
+	continue
+}
+
+// object type highlighting - treasure
+at:ram@0x81(!m--101-00)	{
+	normal "J6:J13"
+	highlight "I6:I18"
+	highlight J18
+	continue
+}
+at:ram@0x81(!m--101-01)	{
+	normal "J6:J13"
+	highlight "I6:I19"
+	highlight J19
+	continue
+}
+at:ram@0x81(!m--101-10)	{
+	normal "J6:J13"
+	highlight "I6:I20"
+	highlight J20
+	continue
+}
+at:ram@0x81(!m--101-11)	{
+	normal "J6:J13"
+	highlight "I6:I21"
+	highlight J21
+	continue
+}
+
+// this must be at end of spreadsheet updating
+at:ram@0x81(!m--------)	{
+	begin waitforchange
+}
+
+<waitforchange> changed:ram@0x81	{
+	// force display redraw
+	begin ""
+}
+
+spreadsheet
+{"0_0":"Pitfall!","0_1":"PCG","0_2":"(LFSR at $81)","2_0":"at:ram@0x81","2_1":"=","4_3":1,"4_5":1,"4_7":1,"4_8":1,"4_9":1,"6_2":"1x hole","6_3":"000","6_9":"000","6_10":"1x logs","6_11":"rolling","7_2":"3x holes","7_3":"001","7_9":"001","7_10":"2x logs","7_11":"rolling","7_12":"tight spacing","8_1":"tarpit","8_2":"+ vine","8_3":"010","8_9":"010","8_10":"2x logs","8_11":"rolling","9_1":"swamp","9_2":"+ vine","9_3":"011","9_9":"011","9_10":"3x logs","9_11":"rolling","10_2":"crocs","10_3":"100","10_9":"100","10_10":"1x log","11_1":"treasure +","11_2":"black quicksand","11_3":"101","11_9":"101","11_10":"3x logs","12_1":"black quicksand","12_2":"+ vine","12_3":"110","12_9":"110","12_10":"fire","13_1":"blue quicksand","13_2":"no vine","13_3":"111","13_9":"111","13_10":"snake","15_9":"x0x","15_10":"no vine","16_9":"x1x","16_10":"vine","18_9":"x00","18_10":"silver bag","19_9":"x01","19_10":"silver bar","20_9":"x10","20_10":"gold bar","21_9":"x11","21_10":"diamond ring"}
