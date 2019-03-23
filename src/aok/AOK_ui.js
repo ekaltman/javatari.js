@@ -235,7 +235,7 @@ jt.aokUI= function(uiElement, atariConsole){
     sheetHolder.style.position = "relative";
     sheetHolder.style.overflow = "scroll";
     sheetHolder.style.width = "640px";
-    sheetHolder.style.height = "360px";
+    sheetHolder.style.height = "475px";
 
 
     var sheetColorTable = {
