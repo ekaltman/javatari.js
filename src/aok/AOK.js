@@ -574,13 +574,17 @@ jt.AOK = function(emu) {
 		'message':	[ 'w',		c_message ],
 		'bubble':	[ 'cw',		c_bubble ],
 		'continue':	[ '',		c_continue ],
-		'eval':		[ 'w',		c_eval ],	// for Eric :-)
+		'eval':		[ 'w',		c_eval ],
 		'label':	[ 'Cw',		c_label ],
 	};
 
 	// Scanner returns lexemes whose token type can be distinguished
 	// based on the first character:
-	//	(	at:..., changed:..., or parenthesized playspec
+	//	@	at:..., changed:...  (later is parenthesized playspec)
+	//	(	(
+	//	)	)
+	//	|	|
+	//	;	;
 	//	,	,
 	//	&	&
 	//	<	<state>
@@ -639,6 +643,10 @@ jt.AOK = function(emu) {
 			    case '}':
 			    case ',':
 			    case '&':
+			    case '|':
+			    case ';':
+			    case '(':
+			    case ')':
 				s = s.slice(1);
 				return rv;
 			}
@@ -652,13 +660,13 @@ jt.AOK = function(emu) {
 			re = /^at:\w+(@\w+)?\((!?)([^)]+)\)/g;
 			if ((m = re.exec(s)) !== null) {
 				s = s.slice(re.lastIndex);
-				return '(' + m[0] + ')';
+				return '@' + m[0];
 			}
 			// (single) changed:... expressions
 			re = /^changed:\w+(@\w+)/g;
 			if ((m = re.exec(s)) !== null) {
 				s = s.slice(re.lastIndex);
-				return '(' + m[0] + ')';
+				return '@' + m[0];
 			}
 			// unquoted word
 			re = /^\w+/g;
@@ -781,7 +789,7 @@ jt.AOK = function(emu) {
 	}
 
 	var psexpr = function() {
-		if (peek()[0] != '(') {
+		if (peek()[0] != '@') {
 			throw 'expected playspec expression';
 		}
 		return lex();
@@ -795,7 +803,8 @@ jt.AOK = function(emu) {
 		//	re-formatted as a string, and thrown anew, but the
 		//	info's too useful for debugging right now.
 		//
-		expr = expr.slice(1, -1);	// remove outer parens
+		expr = expr.slice(1);		// remove @
+console.log("expr = [" + expr + "]");
 
 		// I can haz fastpath?
 		var func = aokfp_getfunc(expr);
@@ -819,7 +828,7 @@ jt.AOK = function(emu) {
 			lstate.seenused[s] = true;
 
 			lex();
-			if (peek()[0] != '(') {
+			if (!'(@'.includes(peek()[0])) {	// blech
 				if (s != 'START') {
 					throw "can only omit at-expr for START";
 				}
@@ -831,6 +840,7 @@ jt.AOK = function(emu) {
 			}
 			// falls through
 		    case '(':
+		    case '@':
 			var expr = psexpr();
 			var actions = action();
 			var ps = makePS(expr);
