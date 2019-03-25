@@ -788,11 +788,38 @@ jt.AOK = function(emu) {
 		}
 	}
 
+	// parse without regard for operator precedence; playspecs handles that
+	var psexpr_atom = function() {
+		var rv, t = peek();
+		switch (t[0]) {
+		    case '(':
+			lex();
+			rv = psexpr_binop();
+			if (peek() != ')') {
+				throw 'expected ")"';
+			}
+			lex();
+			return rv;
+		    case '@':
+			return lex().slice(1);
+		    default:
+			throw 'expected at or changed or parenthesized expr';
+		}
+	}
+	var psexpr_binop = function() {
+		var t, rv = psexpr_atom();
+		while ('&|,;'.includes( (t = peek())[0] )) {
+			rv += lex();
+			rv += psexpr_atom();
+		}
+		return rv;
+	}
+
 	var psexpr = function() {
-		if (peek()[0] != '@') {
+		if (!'(@'.includes(peek()[0])) {
 			throw 'expected playspec expression';
 		}
-		return lex();
+		return '@' + psexpr_binop();
 	}
 
 	var makePS = function(expr) {
@@ -804,7 +831,7 @@ jt.AOK = function(emu) {
 		//	info's too useful for debugging right now.
 		//
 		expr = expr.slice(1);		// remove @
-console.log("expr = [" + expr + "]");
+		//console.log("expr = [" + expr + "]");
 
 		// I can haz fastpath?
 		var func = aokfp_getfunc(expr);
