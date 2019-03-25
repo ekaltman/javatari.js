@@ -799,7 +799,7 @@ jt.AOK = function(emu) {
 				throw 'expected ")"';
 			}
 			lex();
-			return rv;
+			return '(' + rv + ')';
 		    case '@':
 			return lex().slice(1);
 		    default:
