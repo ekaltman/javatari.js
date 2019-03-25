@@ -13,7 +13,7 @@
 }
 
 // will be done on power on and game reset
-at:ram@0xd8(20)	{
+at:ram@0xd8(!20)	{
 	message "Welcome to the tour of Pitfall's memory!"
 	message "The game has been slowed down so you can see"
 	message "the changes more easily."
@@ -21,30 +21,30 @@ at:ram@0xd8(20)	{
 	begin waitforgamestart
 }
 
-<waitforgamestart> at:ram@0xd8(19)	{
+<waitforgamestart> at:ram@0xd8(!19)	{
 	// just trigger the first time
 	begin tour1
 }
 
 // don't really have a sense of time, so base these off Pitfall's clock
 
-<tour1> at:ram@d8(20)	{	// game reset
+<tour1> at:ram@d8(!20)	{	// game reset
 	begin ""
 }
-<tour1> at:ram@0xd9(59) {
+<tour1> at:ram@0xd9(!59) {
 	bubble C2 "PRNG used for PCG; changes whenever you flip screens"
 	begin tour2
 }
 
-<tour2> at:ram@d8(20)	{	// game reset
+<tour2> at:ram@d8(!20)	{	// game reset
 	begin ""
 }
-<tour2> at:ram@0xd9(57) {
+<tour2> at:ram@0xd9(!57) {
 	bubble D2 "PRNG used everything else; note its rapid changes"
 	begin theend
 }
 
-<theend> at:ram@0xd8(20) {
+<theend> at:ram@0xd8(!20) {
 	begin ""
 }
 

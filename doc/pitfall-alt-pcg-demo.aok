@@ -1,6 +1,6 @@
 // Pitfall! PCG visualization
 //
-// N.B. if console logging is occuring, there's a pause on screen transitions
+// N.B. if console logging is occurring, there's a pause on screen transitions
 
 <START>		{
 	frame
