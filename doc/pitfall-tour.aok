@@ -3,8 +3,6 @@
 // this runs pretty slowly with the spreadsheet updates, but that
 // kind of works for this demo
 
-// XXX not working yet!
-
 <START> {
 	frame
 
@@ -18,44 +16,46 @@ at:ram@0xd8(!20)	{
 	message "The game has been slowed down so you can see"
 	message "the changes more easily."
 	// so we aren't repeating this message continuously whilst waiting
-	begin waitforgamestart
-}
-
-<waitforgamestart> at:ram@0xd8(!19)	{
-	// just trigger the first time
-	begin tour1
+	begin tour
 }
 
 // don't really have a sense of time, so base these off Pitfall's clock
 
-<tour1> at:ram@d8(!20)	{	// game reset
+<tour> at:ram@d8(!20)	{	// game reset
 	begin ""
-}
-<tour1> at:ram@0xd9(!59) {
-	bubble C2 "PRNG used for PCG; changes whenever you flip screens"
-	begin tour2
 }
 
-<tour2> at:ram@d8(!20)	{	// game reset
-	begin ""
+// catch timer transitions
+<tour> at:ram@0xd9(!59), at:ram@0xd9(!58) {
+	bubble C2 "PRNG used for PCG; changes whenever you flip screens"
 }
-<tour2> at:ram@0xd9(!57) {
+<tour> at:ram@0xd9(!57), at:ram@0xd9(!56) {
 	bubble D2 "PRNG used everything else; note its rapid changes"
+}
+<tour> at:ram@0xd9(!55), at:ram@0xd9(!54) {
+	bubble H7 "$D5-$D7 are the score in BCD; let's change it to 123456"
+}
+<tour> at:ram@0xd9(!54), at:ram@0xd9(!53) {
+	// XXX long-term, there should be a cleaner way to do this
+	eval "aokui_ram.write(0xd5, 0x12)"
+	eval "aokui_ram.write(0xd6, 0x34)"
+	eval "aokui_ram.write(0xd7, 0x56)"
+}
+<tour> at:ram@0xd9(!53), at:ram@0xd9(!52) {
+	bubble J7 "$D8-$D9 are the timer value in BCD"
+}
+<tour> at:ram@0xd9(!51), at:ram@0xd9(!50) {
+	bubble C8 "This is the X position of Harry; move and see it changing"
+}
+<tour> at:ram@0xd9(!49), at:ram@0xd9(!48) {
+	bubble K8 "This is the Y position of Harry; try jumping or falling"
 	begin theend
 }
 
+// spin until game reset so tour isn't repeated on subsequent minutes
 <theend> at:ram@0xd8(!20) {
 	begin ""
 }
 
 spreadsheet
-{"0_0":"Pitfall!","1_1":"0","1_2":"1","1_3":"2","1_4":"3","1_5":"4","1_6":"5","1_7":"6","1_8":"7","1_9":"8","1_10":"9","1_11":"A","1_12":"B","1_13":"C","1_14":"D","1_15":"E","1_16":"F","2_0":"008x","2_1":"at:ram@0x80","2_2":"at:ram@0x81","2_3":"at:ram@0x82","2_4":"at:ram@0x83","2_5":"at:ram@0x84","2_6":"at:ram@0x85","3_0":"009x","4_0":"00Ax","5_0":"00Bx","6_0":"00Cx","7_0":"00Dx","8_0":"00Ex","9_0":"00Fx",
-"2_7":"at:ram@0x86", "2_8":"at:ram@0x87", "2_9":"at:ram@0x88", "2_10":"at:ram@0x89", "2_11":"at:ram@0x8a", "2_12":"at:ram@0x8b", "2_13":"at:ram@0x8c", "2_14":"at:ram@0x8d", "2_15":"at:ram@0x8e", "2_16":"at:ram@0x8f",
-"3_1":"at:ram@0x90", "3_2":"at:ram@0x91", "3_3":"at:ram@0x92", "3_4":"at:ram@0x93", "3_5":"at:ram@0x94", "3_6":"at:ram@0x95", "3_7":"at:ram@0x96", "3_8":"at:ram@0x97", "3_9":"at:ram@0x98", "3_10":"at:ram@0x99", "3_11":"at:ram@0x9a", "3_12":"at:ram@0x9b", "3_13":"at:ram@0x9c", "3_14":"at:ram@0x9d", "3_15":"at:ram@0x9e", "3_16":"at:ram@0x9f",
-"4_1":"at:ram@0xa0", "4_2":"at:ram@0xa1", "4_3":"at:ram@0xa2", "4_4":"at:ram@0xa3", "4_5":"at:ram@0xa4", "4_6":"at:ram@0xa5", "4_7":"at:ram@0xa6", "4_8":"at:ram@0xa7", "4_9":"at:ram@0xa8", "4_10":"at:ram@0xa9", "4_11":"at:ram@0xaa", "4_12":"at:ram@0xab", "4_13":"at:ram@0xac", "4_14":"at:ram@0xad", "4_15":"at:ram@0xae", "4_16":"at:ram@0xaf",
-"5_1":"at:ram@0xb0", "5_2":"at:ram@0xb1", "5_3":"at:ram@0xb2", "5_4":"at:ram@0xb3", "5_5":"at:ram@0xb4", "5_6":"at:ram@0xb5", "5_7":"at:ram@0xb6", "5_8":"at:ram@0xb7", "5_9":"at:ram@0xb8", "5_10":"at:ram@0xb9", "5_11":"at:ram@0xba", "5_12":"at:ram@0xbb", "5_13":"at:ram@0xbc", "5_14":"at:ram@0xbd", "5_15":"at:ram@0xbe", "5_16":"at:ram@0xbf",
-"6_1":"at:ram@0xc0", "6_2":"at:ram@0xc1", "6_3":"at:ram@0xc2", "6_4":"at:ram@0xc3", "6_5":"at:ram@0xc4", "6_6":"at:ram@0xc5", "6_7":"at:ram@0xc6", "6_8":"at:ram@0xc7", "6_9":"at:ram@0xc8", "6_10":"at:ram@0xc9", "6_11":"at:ram@0xca", "6_12":"at:ram@0xcb", "6_13":"at:ram@0xcc", "6_14":"at:ram@0xcd", "6_15":"at:ram@0xce", "6_16":"at:ram@0xcf",
-"7_1":"at:ram@0xd0", "7_2":"at:ram@0xd1", "7_3":"at:ram@0xd2", "7_4":"at:ram@0xd3", "7_5":"at:ram@0xd4", "7_6":"at:ram@0xd5", "7_7":"at:ram@0xd6", "7_8":"at:ram@0xd7", "7_9":"at:ram@0xd8", "7_10":"at:ram@0xd9", "7_11":"at:ram@0xda", "7_12":"at:ram@0xdb", "7_13":"at:ram@0xdc", "7_14":"at:ram@0xdd", "7_15":"at:ram@0xde", "7_16":"at:ram@0xdf",
-"8_1":"at:ram@0xe0", "8_2":"at:ram@0xe1", "8_3":"at:ram@0xe2", "8_4":"at:ram@0xe3", "8_5":"at:ram@0xe4", "8_6":"at:ram@0xe5", "8_7":"at:ram@0xe6", "8_8":"at:ram@0xe7", "8_9":"at:ram@0xe8", "8_10":"at:ram@0xe9", "8_11":"at:ram@0xea", "8_12":"at:ram@0xeb", "8_13":"at:ram@0xec", "8_14":"at:ram@0xed", "8_15":"at:ram@0xee", "8_16":"at:ram@0xef",
-"9_1":"at:ram@0xf0", "9_2":"at:ram@0xf1", "9_3":"at:ram@0xf2", "9_4":"at:ram@0xf3", "9_5":"at:ram@0xf4", "9_6":"at:ram@0xf5", "9_7":"at:ram@0xf6", "9_8":"at:ram@0xf7", "9_9":"at:ram@0xf8", "9_10":"at:ram@0xf9", "9_11":"at:ram@0xfa", "9_12":"at:ram@0xfb", "9_13":"at:ram@0xfc", "9_14":"at:ram@0xfd", "9_15":"at:ram@0xfe", "9_16":"at:ram@0xff"
-}
+{"0_0":"Pitfall!","1_1":"0","1_2":"1","1_3":"2","1_4":"3","1_5":"4","1_6":"5","1_7":"6","1_8":"7","1_9":"8","1_10":"9","1_11":"A","1_12":"B","1_13":"C","1_14":"D","1_15":"E","1_16":"F","2_0":"008x","2_1":"at:ram@0x80","2_2":"at:ram@0x81","2_3":"at:ram@0x82","2_4":"at:ram@0x83","2_5":"at:ram@0x84","2_6":"at:ram@0x85","2_7":"at:ram@0x86","2_8":"at:ram@0x87","2_9":"at:ram@0x88","2_10":"at:ram@0x89","2_11":"at:ram@0x8a","2_12":"at:ram@0x8b","2_13":"at:ram@0x8c","2_14":"at:ram@0x8d","2_15":"at:ram@0x8e","2_16":"at:ram@0x8f","3_0":"009x","3_1":"at:ram@0x90","3_2":"at:ram@0x91","3_3":"at:ram@0x92","3_4":"at:ram@0x93","3_5":"at:ram@0x94","3_6":"at:ram@0x95","3_7":"at:ram@0x96","3_8":"at:ram@0x97","3_9":"at:ram@0x98","3_10":"at:ram@0x99","3_11":"at:ram@0x9a","3_12":"at:ram@0x9b","3_13":"at:ram@0x9c","3_14":"at:ram@0x9d","3_15":"at:ram@0x9e","3_16":"at:ram@0x9f","4_0":"00Ax","4_1":"at:ram@0xa0","4_2":"at:ram@0xa1","4_3":"at:ram@0xa2","4_4":"at:ram@0xa3","4_5":"at:ram@0xa4","4_6":"at:ram@0xa5","4_7":"at:ram@0xa6","4_8":"at:ram@0xa7","4_9":"at:ram@0xa8","4_10":"at:ram@0xa9","4_11":"at:ram@0xaa","4_12":"at:ram@0xab","4_13":"at:ram@0xac","4_14":"at:ram@0xad","4_15":"at:ram@0xae","4_16":"at:ram@0xaf","5_0":"00Bx","5_1":"at:ram@0xb0","5_2":"at:ram@0xb1","5_3":"at:ram@0xb2","5_4":"at:ram@0xb3","5_5":"at:ram@0xb4","5_6":"at:ram@0xb5","5_7":"at:ram@0xb6","5_8":"at:ram@0xb7","5_9":"at:ram@0xb8","5_10":"at:ram@0xb9","5_11":"at:ram@0xba","5_12":"at:ram@0xbb","5_13":"at:ram@0xbc","5_14":"at:ram@0xbd","5_15":"at:ram@0xbe","5_16":"at:ram@0xbf","6_0":"00Cx","6_1":"at:ram@0xc0","6_2":"at:ram@0xc1","6_3":"at:ram@0xc2","6_4":"at:ram@0xc3","6_5":"at:ram@0xc4","6_6":"at:ram@0xc5","6_7":"at:ram@0xc6","6_8":"at:ram@0xc7","6_9":"at:ram@0xc8","6_10":"at:ram@0xc9","6_11":"at:ram@0xca","6_12":"at:ram@0xcb","6_13":"at:ram@0xcc","6_14":"at:ram@0xcd","6_15":"at:ram@0xce","6_16":"at:ram@0xcf","7_0":"00Dx","7_1":"at:ram@0xd0","7_2":"at:ram@0xd1","7_3":"at:ram@0xd2","7_4":"at:ram@0xd3","7_5":"at:ram@0xd4","7_6":"at:ram@0xd5","7_7":"at:ram@0xd6","7_8":"at:ram@0xd7","7_9":"at:ram@0xd8","7_10":"at:ram@0xd9","7_11":"at:ram@0xda","7_12":"at:ram@0xdb","7_13":"at:ram@0xdc","7_14":"at:ram@0xdd","7_15":"at:ram@0xde","7_16":"at:ram@0xdf","8_0":"00Ex","8_1":"at:ram@0xe0","8_2":"at:ram@0xe1","8_3":"at:ram@0xe2","8_4":"at:ram@0xe3","8_5":"at:ram@0xe4","8_6":"at:ram@0xe5","8_7":"at:ram@0xe6","8_8":"at:ram@0xe7","8_9":"at:ram@0xe8","8_10":"at:ram@0xe9","8_11":"at:ram@0xea","8_12":"at:ram@0xeb","8_13":"at:ram@0xec","8_14":"at:ram@0xed","8_15":"at:ram@0xee","8_16":"at:ram@0xef","9_0":"00Fx","9_1":"at:ram@0xf0","9_2":"at:ram@0xf1","9_3":"at:ram@0xf2","9_4":"at:ram@0xf3","9_5":"at:ram@0xf4","9_6":"at:ram@0xf5","9_7":"at:ram@0xf6","9_8":"at:ram@0xf7","9_9":"at:ram@0xf8","9_10":"at:ram@0xf9","9_11":"at:ram@0xfa","9_12":"at:ram@0xfb","9_13":"at:ram@0xfc","9_14":"at:ram@0xfd","9_15":"at:ram@0xfe","9_16":"at:ram@0xff"}
