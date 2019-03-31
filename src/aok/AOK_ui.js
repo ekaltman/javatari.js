@@ -232,6 +232,7 @@ jt.aokUI= function(uiElement, atariConsole){
     sheetCellEditor.style.marginTop = "6px";
 
     var sheetHolder = document.createElement("div");
+    sheetHolder.setAttribute("id", "aok-ui-sheet-holder");
     sheetHolder.style.position = "relative";
     sheetHolder.style.overflow = "scroll";
     sheetHolder.style.width = "640px";
@@ -241,7 +242,7 @@ jt.aokUI= function(uiElement, atariConsole){
     var sheetColorTable = {
 	red: "rgb(255,0,0)",
 	green: "rgb(0,255,0)",
-	blue: "#rgb(0,0,255)",
+	blue: "rgb(0,0,255)",
 	yellow: "rgb(255,255,0)",
 	purple: "rgb(128,0,128)",
 	gray: "rgb(128,128,128)",
@@ -282,8 +283,8 @@ jt.aokUI= function(uiElement, atariConsole){
     //    }
     //}
     var sheetArgTypeRegex = {
-	location: /at:(?<component>\w+)@(?<location>\w+)(,|\))?/,
-	color: /^(?<web>red|blue|green|yellow|gray|grey|purple|pink)?|^(?<rgb>#[0-9A-F]{6})?/
+	location: /at:(?<component>\w+)@(?<location>\w+)(,\s*|\s*\))?/,
+	color: /(^(?<web>red|blue|green|yellow|gray|grey|purple|pink)|^(?<rgb>#[a-fA-F0-9]{6}))(,\s*|\s*\))?/
     };
 
     function parseCellExpression(expression, cell){
@@ -360,19 +361,54 @@ jt.aokUI= function(uiElement, atariConsole){
     }
 
     function sheetHeatFunc(location, color, cell){
-	var component, loc, baseColor;
-	component = location.component;
-	loc = location.location;
-	if(color.web){
+	var component, loc, baseColor, expressionColor, lookupFunc;
+	if(color.rgb){
+	    var red = parseInt("0x" + color.rgb.substring(1,3));
+	    var green = parseInt("0x" + color.rgb.substring(3,5));
+	    var blue = parseInt("0x" + color.rgb.substring(5));
+
+	    baseColor = "rgb(" + red + "," + green + "," + blue + ")";
+	    expressionColor = color.rgb;
+	}else{
 	    baseColor = sheetColorTable[color.web];
-	}else if(color.rgb){
+	    expressionColor = color.web;
 	}
 
-	//convert color to rgb
+	lookupFunc = generateLocationLookupFunction(location);
 
-	//map color to location value
 
-    }
+	heatFunction = function(bc){
+	    return (value) => {
+		var newBGColor = RGB_Log_Shade(scaleValueToShadePercentage(value), bc);
+		var newWordColor = value < 0xBB ? 'white': 'black';
+		return {backgroundColor: newBGColor, color: newWordColor};
+	    };
+	}(baseColor);
+
+
+	updateFunction = function(c, hf){
+	    return () => {
+		var value = lookupFunc();
+		sheetScheduleUpdate(c, value.toString(16), hf(value) );
+	    };
+	}(cell, heatFunction);
+
+	//Add to instr update list
+	sheetModel.frameUpdateList.push(cell);
+
+
+	return {
+	    updateFunction: updateFunction,
+	    style: "",
+	    value: "heat(at:"+location.component+"@"+location.location+", "+expressionColor+")"
+	};
+
+    };
+
+    // 0x0 -- 0xFF --> -1.0 -- 1.0, rounded to 0.01
+    const scaleValueToShadePercentage = (value) => {
+	return Math.round((((value + 1) / 128 - 1) * 100)) / 100; // value + 1 since 256/128 == 2.0 and input range is 0 to 255
+    };
 
     // from https://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors/13542669
     // p is percent of shade from -1.0 to 1.0, black to white
@@ -385,20 +421,26 @@ jt.aokUI= function(uiElement, atariConsole){
     function sheetAtariColorFunc(location, cell){
     }
 
-    function sheetLocUpdateFunc(location, updateLoop, cell){
-	var component, loc, lookup;
+    function generateLocationLookupFunction(location){
+	var component, loc, lookupFunc;
 	component = location.component;
 	loc = location.location;
 
 	if(component == "ram"){
-	    lookup = function(location){
+	    lookupFunc = function(location){
 		return eval("() => { return aokui_ram.read(parseInt(" + location + "))}");
 	    }(loc);
 	}else if(component == "tia"){
-	    lookup = aokui_getfunc("tia", loc);
+	    lookupFunc = aokui_getfunc("tia", loc);
 	}else if(component == "cpu"){
-	    lookup = aokui_getfunc("cpu", loc);
+	    lookupFunc = aokui_getfunc("cpu", loc);
 	}
+
+	return lookupFunc;
+    }
+
+    function sheetLocUpdateFunc(location, updateLoop, cell){
+	var lookup = generateLocationLookupFunction(location);
 
 	updateFunction = function(c){
 	    return () => {
@@ -420,12 +462,19 @@ jt.aokUI= function(uiElement, atariConsole){
     }
 
     function applyCellStyle(styleObject, cellElement){
+	for( var attr in styleObject){
+	    cellElement.style[attr] = styleObject[attr];
+	}
     }
 
-    function sheetScheduleUpdate(cell, newValue){
+    function sheetScheduleUpdate(cell, newValue, styleObject){
 	var currentValue = cell.getValue();
 	if(newValue === currentValue) //if the value hasn't changed, there's no value to update
 	    return null;
+
+	if(styleObject){
+	    sheetModel.pendingStyleUpdates[cell.id] = styleObject;
+	}
 
 	sheetModel.pendingValueUpdates[cell.id] = newValue;
 	if(!sheetModel.pendingUpdate){
@@ -438,8 +487,10 @@ jt.aokUI= function(uiElement, atariConsole){
 
     function updateSheetAnimFrame(){
 	for(var key in sheetModel.pendingValueUpdates){
-	    var [col, row] = key.split("_"); //destructing declaration, new to ES6
-	    sheetModel.sheetData[row][col].setValue(sheetModel.pendingValueUpdates[key]);
+	    var [col, row] = key.split("_");
+	    var cell = sheetModel.sheetData[row][col];
+	    cell.setValue(sheetModel.pendingValueUpdates[key]);
+	    cell.setStyle(sheetModel.pendingStyleUpdates[key]);
 	}
 	sheetModel.pendingValueUpdates = {};
 	sheetModel.pendingUpdate = false;
@@ -549,7 +600,15 @@ jt.aokUI= function(uiElement, atariConsole){
 		self.state.value = value;
 		self.element.innerHTML = value;
 	    },
-	    getValue: () => self.value
+	    getValue: () => self.value,
+	    setStyle: (styleObj) => {
+		self.style = styleObj;
+		self.state.style = styleObj;
+		for( var attr in styleObj ){
+		    self.element.style[attr] = styleObj[attr];
+		}
+	    },
+	    getStyle: () => self.style
 	};
     };
 
@@ -557,7 +616,7 @@ jt.aokUI= function(uiElement, atariConsole){
 
     var sheetTableElement = document.createElement("table");
     sheetTableElement.setAttribute("id", "aok-ui-sheet-table");
-    sheetTableElement.style.border = "1px solid";
+    sheetTableElement.style.border = "1px solid gray";
     sheetTableElement.style.borderCollapse = "collapse";
     sheetTableElement.style.width = initMaxNumberColumns * cellWidth + rowHeaderCellWidth + "px";
     sheetTableElement.style.height = initMaxNumberRows * cellHeight + columnHeaderCellHeight + "px";
@@ -572,7 +631,7 @@ jt.aokUI= function(uiElement, atariConsole){
 	headerData.innerHTML = "" + columnNumberToLetter(i);
 	headerData.style.width = cellWidth + "px";
 	headerData.style.height = columnHeaderCellHeight + "px";
-	headerData.style.border = "1px solid";
+	headerData.style.border = "1px solid gray";
 	headerData.style.borderCollapse = "collapse";
 	headerRow.appendChild(headerData);
     }
@@ -590,7 +649,7 @@ jt.aokUI= function(uiElement, atariConsole){
 	for (var j = 0; j < initMaxNumberColumns + 1; j++){ //adding one for header column
 	    var element = document.createElement("td");
 	    element.style.height = cellHeight + "px";
-	    element.style.border = "1px solid";
+	    element.style.border = "1px solid gray";
 	    element.style.borderCollapse = "collapse";
 	    if(j == 0){ // we are in header column
 		element.setAttribute("id", "aok-ui-sheet-table-header-row-" + i);
