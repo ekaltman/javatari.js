@@ -650,6 +650,12 @@ jt.AOK = function(emu) {
 				s = s.slice(1);
 				return rv;
 			}
+			// ellipsis
+			re = /^\.\.\./g;
+			if ((m = re.exec(s)) !== null) {
+				s = s.slice(re.lastIndex);
+				return '\u2026'			// unicode "..."
+			}
 			// states
 			re = /^<\w+>/g;
 			if ((m = re.exec(s)) !== null) {
@@ -802,8 +808,21 @@ jt.AOK = function(emu) {
 			return '(' + rv + ')';
 		    case '@':
 			return lex().slice(1);
+		    case '\u2026':				// unicode "..."
+			lex();
+			return '...';
+		    case '"':
+			if (t == '"end"') {
+				lex();
+				return 'end';
+			}
+			if (t == '"not"') {
+				lex();
+				return 'not ' + psexpr_atom();
+			}
+			// falls through
 		    default:
-			throw 'expected at or changed or parenthesized expr';
+			throw 'expected playspec atom or parenthesized expr';
 		}
 	}
 	var psexpr_binop = function() {

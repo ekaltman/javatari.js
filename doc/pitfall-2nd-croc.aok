@@ -1,0 +1,10 @@
+// A pattern intended to trigger after a longer sequence of game states,
+// and show off more features of playspecs (not, ellipsis, &c.).
+//
+// XXX will eventually need to anchor at end
+
+<START> frame
+
+at:ram@0x81(!m--100---), not at:ram@0x81(!m--100---), ..., at:ram@0x81(!m--100---) {
+        log "2nd croc scene seen"
+}
