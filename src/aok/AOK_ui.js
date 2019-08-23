@@ -457,7 +457,7 @@ jt.aokUI= function(uiElement, atariConsole){
 	return {
 	    updateFunction: updateFunction,
 	    style: "",
-	    value: "at:" + component + "@" + loc
+	    value: "at:" + location.component + "@" + location.location
 	};
     }
 
@@ -950,15 +950,15 @@ at:cpu@PC(f824)		{
     });
 
     aok.aok_event.on(aok.aok_event.AOK_LOG, function(eventData){
-	console.log("AOK_LOG Called: " + eventData.s);
+	//console.log("AOK_LOG Called: " + eventData.s);
 	standardOutput.innerHTML += "<span class='aok_log_standard_output'>" + eventData.s + "</span><br>";
     });
 
     aok.aok_event.on(aok.aok_event.AOK_BUBBLE, function(eventData){
-	var coord_message = "Bubble at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + " with message: " + eventData.s + "<br>";
+	//var coord_message = "Bubble at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + " with message: " + eventData.s + "<br>";
 	var [col, row] = splitAt(1, eventData.coord);
 	generateBubbleElement(parseInt(row), columnLetterToNumber(col), eventData.s);
-	standardOutput.innerHTML += coord_message;
+	//standardOutput.innerHTML += coord_message;
     });
 
     aok.aok_event.on(aok.aok_event.AOK_LABEL, function(eventData){
@@ -970,18 +970,18 @@ at:cpu@PC(f824)		{
     });
 
     aok.aok_event.on(aok.aok_event.AOK_NORMAL, function(eventData){
-	var coord_message = "Normal at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + "<br>";
-	standardOutput.innerHTML += coord_message;
+	//var coord_message = "Normal at coord: " + "<span class='aok_coord_standard_output'>" + eventData.coord +"</span>" + "<br>";
+	//standardOutput.innerHTML += coord_message;
 	var [col, row] = splitAt(1, eventData.coord);
 	unSelectCell(columnLetterToNumber(col), parseInt(row), sheetModel.sheetData);
     });
 
     aok.aok_event.on(aok.aok_event.AOK_HIGHLIGHT, function(eventData){
-	var coord_message = "Highlight at coord: " + "<span class ='aok_coord_standard_output'>" + eventData.coord +"</span>" +"<br>";
-	standardOutput.innerHTML += coord_message;
+	//var coord_message = "Highlight at coord: " + "<span class ='aok_coord_standard_output'>" + eventData.coord +"</span>" +"<br>";
+	//standardOutput.innerHTML += coord_message;
 	var [col, row] = splitAt(1, eventData.coord);
-	console.log(col);
-	console.log(row);
+	//console.log(col);
+	//console.log(row);
 	selectCell(columnLetterToNumber(col), parseInt(row), sheetModel.sheetData);
     });
 
